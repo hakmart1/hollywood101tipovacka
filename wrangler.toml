@@ -1,0 +1,9 @@
+name = "hollywood101tipovacka"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-06-02"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hollywood101tipovacka"
+database_id = "3ae4f86e-9388-4224-8df6-54c6dc12399b"
+migrations_dir = "db/migrations"
