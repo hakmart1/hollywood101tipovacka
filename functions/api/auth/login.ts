@@ -7,14 +7,20 @@ import {
   SESSION_MAX_AGE_SECONDS,
   signSession,
   verifyPassword
-} from "../../_lib/auth.js";
+} from "../../_lib/auth";
+import type { Env, LoginAccountRecord, LoginRequestBody } from "../../_lib/types";
 
-export async function onRequestPost(context) {
+interface PagesContext {
+  env: Env;
+  request: Request;
+}
+
+export async function onRequestPost(context: PagesContext): Promise<Response> {
   assertSessionConfig(context.env);
 
-  let payload;
+  let payload: LoginRequestBody;
   try {
-    payload = await context.request.json();
+    payload = (await context.request.json()) as LoginRequestBody;
   } catch {
     return json({ error: "Invalid JSON body." }, 400);
   }
@@ -39,7 +45,7 @@ export async function onRequestPost(context) {
       INNER JOIN user_auth_identities ON user_auth_identities.user_id = users.id
       WHERE user_auth_identities.provider = 'local'
         AND users.email = ?1`
-  ).bind(email).first();
+  ).bind(email).first<LoginAccountRecord>();
 
   if (!account) {
     return json({ error: "Invalid email or password." }, 401);
@@ -60,7 +66,7 @@ export async function onRequestPost(context) {
       userId: account.id,
       exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS
     },
-    context.env.SESSION_SECRET
+    context.env.SESSION_SECRET!
   );
 
   return new Response(

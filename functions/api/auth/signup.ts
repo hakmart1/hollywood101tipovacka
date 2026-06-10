@@ -6,12 +6,18 @@ import {
   normalizeEmail,
   normalizeNicknameInput,
   validatePassword
-} from "../../_lib/auth.js";
+} from "../../_lib/auth";
+import type { Env, SignupRequestBody } from "../../_lib/types";
 
-export async function onRequestPost(context) {
-  let payload;
+interface PagesContext {
+  env: Env;
+  request: Request;
+}
+
+export async function onRequestPost(context: PagesContext): Promise<Response> {
+  let payload: SignupRequestBody;
   try {
-    payload = await context.request.json();
+    payload = (await context.request.json()) as SignupRequestBody;
   } catch {
     return json({ error: "Invalid JSON body." }, 400);
   }
@@ -20,7 +26,7 @@ export async function onRequestPost(context) {
   const nickname = normalizeNicknameInput(payload.nickname);
   const password = payload.password;
 
-  if (!email || !email.includes("@")) {
+  if (!email || email.indexOf("@") == -1) {
     return json({ error: "Enter a valid email address." }, 400);
   }
 
@@ -34,7 +40,7 @@ export async function onRequestPost(context) {
 
   const existingUserByEmail = await context.env.DB.prepare(
     "SELECT id FROM users WHERE email = ?1"
-  ).bind(email).first();
+  ).bind(email).first<{ id: string }>();
 
   if (existingUserByEmail) {
     return json({ error: "This email is already registered." }, 409);
@@ -42,7 +48,7 @@ export async function onRequestPost(context) {
 
   const existingUserByNickname = await context.env.DB.prepare(
     "SELECT id FROM users WHERE nickname = ?1"
-  ).bind(nickname).first();
+  ).bind(nickname).first<{ id: string }>();
 
   if (existingUserByNickname) {
     return json({ error: "This nickname is already taken." }, 409);
@@ -73,9 +79,12 @@ export async function onRequestPost(context) {
     ).bind(activationCodeId, userId, activationCodeHash)
   ]);
 
-  return json({
-    ok: true,
-    message: "Account created in unactive state.",
-    debugActivationCode: context.env.DEBUG_AUTH_CODES === "true" ? activationCode : undefined
-  }, 201);
+  return json(
+    {
+      ok: true,
+      message: "Account created in unactive state.",
+      debugActivationCode: context.env.DEBUG_AUTH_CODES === "true" ? activationCode : undefined
+    },
+    201
+  );
 }

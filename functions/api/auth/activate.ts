@@ -2,12 +2,18 @@ import {
   hashActivationCode,
   json,
   normalizeEmail
-} from "../../_lib/auth.js";
+} from "../../_lib/auth";
+import type { ActivateRequestBody, ActivationLookupRecord, Env } from "../../_lib/types";
 
-export async function onRequestPost(context) {
-  let payload;
+interface PagesContext {
+  env: Env;
+  request: Request;
+}
+
+export async function onRequestPost(context: PagesContext): Promise<Response> {
+  let payload: ActivateRequestBody;
   try {
-    payload = await context.request.json();
+    payload = (await context.request.json()) as ActivateRequestBody;
   } catch {
     return json({ error: "Invalid JSON body." }, 400);
   }
@@ -30,7 +36,7 @@ export async function onRequestPost(context) {
       INNER JOIN activation_codes ON activation_codes.user_id = users.id
       WHERE users.email = ?1
         AND activation_codes.code_hash = ?2`
-  ).bind(email, codeHash).first();
+  ).bind(email, codeHash).first<ActivationLookupRecord>();
 
   if (!userWithCode) {
     return json({ error: "Activation code is invalid." }, 404);
