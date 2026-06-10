@@ -1,9 +1,14 @@
 import {
-  hashActivationCode,
   json,
-  normalizeEmail
+  normalizeEmail,
+  validateEmail
 } from "../../_lib/auth";
-import type { ActivateRequestBody, ActivationLookupRecord, Env } from "../../_lib/types";
+import type {
+  ActivateRequestBody,
+  ActivationLookupRecord,
+  ActivationUserRecord,
+  Env
+} from "../../_lib/types";
 
 interface PagesContext {
   env: Env;
@@ -15,53 +20,69 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     payload = (await context.request.json()) as ActivateRequestBody;
   } catch {
-    return json({ error: "Invalid JSON body." }, 400);
+    return json({ error: "Invalid request body." });
   }
 
   const email = normalizeEmail(payload.email);
   const code = String(payload.code || "").trim();
 
   if (!email || !code) {
-    return json({ error: "Email and activation code are required." }, 400);
+    return json({ error: "Email and activation code are required." });
   }
 
-  const codeHash = await hashActivationCode(code);
-  const userWithCode = await context.env.DB.prepare(
+  if (!validateEmail(email)) {
+    return json({ error: "Enter a valid email address." });
+  }
+
+  const user = await context.env.DB.prepare(
     `SELECT
-        users.id,
-        users.status,
-        activation_codes.id AS activation_code_id,
-        activation_codes.consumed_date
+        id,
+        status
       FROM users
-      INNER JOIN activation_codes ON activation_codes.user_id = users.id
-      WHERE users.email = ?1
-        AND activation_codes.code_hash = ?2`
-  ).bind(email, codeHash).first<ActivationLookupRecord>();
+      WHERE email = ?1`
+  ).bind(email).first<ActivationUserRecord>();
 
-  if (!userWithCode) {
-    return json({ error: "Activation code is invalid." }, 404);
+  if (!user) {
+    return json({ error: "Account was not found." });
   }
 
-  if (userWithCode.consumed_date) {
-    return json({ error: "This activation code has already been used." }, 409);
+  const activationCode = await context.env.DB.prepare(
+    `SELECT
+        id AS activation_code_id,
+        user_id,
+        consumed_date
+      FROM activation_codes
+      WHERE code = ?1`
+  ).bind(code).first<ActivationLookupRecord>();
+
+  if (!activationCode) {
+    return json({ error: "Activation code is invalid." });
   }
 
-  if (userWithCode.status === "active") {
-    return json({ ok: true, message: "Account is already active." });
+  if (activationCode.consumed_date) {
+    return json({ error: "This activation code has already been used." });
+  }
+
+  if (activationCode.user_id && activationCode.user_id !== user.id) {
+    return json({ error: "This activation code is assigned to another account." });
+  }
+
+  if (user.status === "active") {
+    return json({ error: null, message: "Account is already active." });
   }
 
   const now = new Date().toISOString();
   await context.env.DB.batch([
     context.env.DB.prepare(
       "UPDATE users SET status = 'active', activated_date = ?1 WHERE id = ?2"
-    ).bind(now, userWithCode.id),
+    ).bind(now, user.id),
     context.env.DB.prepare(
-      "UPDATE activation_codes SET consumed_date = ?1 WHERE id = ?2"
-    ).bind(now, userWithCode.activation_code_id)
+      "UPDATE activation_codes SET user_id = ?1, consumed_date = ?2 WHERE id = ?3"
+    ).bind(user.id, now, activationCode.activation_code_id)
   ]);
 
   return json({
-    ok: true,
+    error: null,
     message: "Account activated. You can log in now."
   });
 }

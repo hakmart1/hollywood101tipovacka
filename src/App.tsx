@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 type UserStatus = "pending_activation" | "active" | "suspended";
 
 interface User {
-  id: string;
+  id: number;
   nickname: string;
   email: string;
   role: string;
@@ -13,18 +13,18 @@ interface User {
 }
 
 interface ApiErrorResponse {
-  error?: string;
+  error: string | null;
+  message?: string;
 }
 
 interface SignupResponse extends ApiErrorResponse {
-  ok?: boolean;
-  message?: string;
-  debugActivationCode?: string;
 }
 
 interface LoginResponse extends ApiErrorResponse {
-  ok?: boolean;
-  user?: User;
+  user?: User | null;
+}
+
+interface LogoutResponse extends ApiErrorResponse {
 }
 
 type LoginState = "loading" | "not-logged" | "logged but unactive user" | "logged and active user";
@@ -45,7 +45,6 @@ export default function App() {
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [output, setOutput] = useState("");
-  const [activationCodeOutput, setActivationCodeOutput] = useState("");
   const [signupOpen, setSignupOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [signupForm, setSignupForm] = useState(defaultSignupForm);
@@ -63,16 +62,23 @@ export default function App() {
         }
       });
 
-      if (response.status === 401) {
+      const payload = (await response.json()) as { user?: User | null; error: string | null };
+
+      if (!response.ok) {
+        setOutput(payload.error || "Could not load session.");
         setCurrentUser(null);
         setLoginState("not-logged");
         return;
       }
 
-      const payload = (await response.json()) as { user?: User; error?: string };
+      if (payload.error) {
+        setOutput(payload.error);
+        setCurrentUser(null);
+        setLoginState("not-logged");
+        return;
+      }
 
-      if (!response.ok || !payload.user) {
-        setOutput(payload.error || "Could not load session.");
+      if (!payload.user) {
         setCurrentUser(null);
         setLoginState("not-logged");
         return;
@@ -110,16 +116,12 @@ export default function App() {
 
     const payload = (await response.json()) as SignupResponse;
 
-    if (!response.ok) {
+    if (!response.ok || payload.error) {
       setOutput(payload.error || "Sign up failed.");
-      setActivationCodeOutput("");
       return;
     }
 
     setOutput(payload.message || "User created.");
-    setActivationCodeOutput(
-      payload.debugActivationCode ? `Debug activation code: ${payload.debugActivationCode}` : ""
-    );
     setSignupOpen(false);
     setSignupForm(defaultSignupForm);
   }
@@ -141,20 +143,21 @@ export default function App() {
 
     const payload = (await response.json()) as LoginResponse;
 
-    if (!response.ok) {
+    if (!response.ok || payload.error) {
       setOutput(payload.error || "Login failed.");
       return;
     }
 
-    setOutput("Login successful.");
+    setOutput(payload.message || "Login successful.");
     setLoginOpen(false);
     setLoginForm(defaultLoginForm);
     await refreshSession();
   }
 
   async function handleLogout() {
-    await fetch("/api/logout", { method: "POST" });
-    setOutput("Logged out.");
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    const payload = (await response.json()) as LogoutResponse;
+    setOutput(payload.error || payload.message || "Logged out.");
     await refreshSession();
   }
 
@@ -173,7 +176,6 @@ export default function App() {
       </p>
 
       <p>{output}</p>
-      <p>{activationCodeOutput}</p>
 
       {loginState === "not-logged" ? (
         <p>

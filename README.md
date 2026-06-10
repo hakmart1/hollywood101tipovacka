@@ -7,7 +7,7 @@ Small Cloudflare app for a movie box office guessing game.
 This repository currently contains the D1 migration only.
 
 - `users`: players and admins, including activation state and current `ImfCoins` balance
-- `activation_codes`: activation codes verified during user unlock flow
+- `activation_codes`: pre-generated activation codes that are assigned to users when consumed
 - `user_auth_identities`: auth providers per user so local login can later grow into Google or Facebook
 - `imf_coin_history`: full history of every `ImfCoins` change
 - `rounds`: admin-controlled round windows, each linked to a season key
@@ -90,12 +90,12 @@ For local-only resets, it is fine to recreate the local database from scratch. F
 
 This repo now includes:
 
-- `public/index.html`: a basic landing page with sign-up, activation, and login forms
-- `functions/api/auth/signup.js`: creates a pending account with local email/password auth
-- `functions/api/auth/activate.js`: consumes the activation code and unlocks the account
-- `functions/api/auth/login.js`: verifies email/password and sets a signed session cookie
-- `functions/api/me.js`: returns the signed-in user from the session cookie
-- `functions/api/logout.js`: clears the session cookie
+- `src/App.tsx`: a basic React landing page with sign-up and login forms
+- `functions/api/auth/signup.ts`: creates a pending account with local email/password auth
+- `functions/api/auth/activate.ts`: consumes a stored activation code and unlocks the account
+- `functions/api/auth/login.ts`: verifies email/password and sets a signed session cookie
+- `functions/api/me.ts`: returns the signed-in user from the session cookie
+- `functions/api/logout.ts`: clears the session cookie
 
 ### Current routes
 
@@ -115,21 +115,12 @@ yarn wrangler pages secret put SESSION_SECRET --project-name hollywood101tipovac
 
 `SESSION_SECRET` signs the login cookie after a successful login.
 
-### Optional debug variable
-
-If you want the sign-up endpoint to return the activation code in the JSON response while testing, add a Pages environment variable:
-
-- name: `DEBUG_AUTH_CODES`
-- value: `true`
-
-Do not keep that enabled for a real production flow.
-
 ### Current activation flow
 
 1. User signs up with nickname, email, and password.
-2. Backend creates a `pending_activation` user and stores a hashed activation code.
+2. Backend creates a `pending_activation` user only.
 3. User enters the activation code.
-4. Backend marks the user as `active`.
+4. Backend finds a pre-generated activation code stored in D1, assigns it to that user, and marks the user as `active`.
 5. User logs in with email and password.
 6. Backend sets a signed session cookie.
 

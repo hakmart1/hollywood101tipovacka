@@ -4,11 +4,10 @@ export type UserRole = "player" | "admin";
 export interface Env {
   DB: D1Database;
   SESSION_SECRET?: string;
-  DEBUG_AUTH_CODES?: string;
 }
 
 export interface SessionPayload {
-  userId: string;
+  userId: number;
   exp: number;
 }
 
@@ -29,7 +28,7 @@ export interface ActivateRequestBody {
 }
 
 export interface UserRecord {
-  id: string;
+  id: number;
   nickname: string;
   email: string;
   role: UserRole;
@@ -42,8 +41,12 @@ export interface LoginAccountRecord extends UserRecord {
 }
 
 export interface ActivationLookupRecord {
-  id: string;
-  status: UserStatus;
-  activation_code_id: string;
+  activation_code_id: number;
+  user_id: number | null;
   consumed_date: string | null;
+}
+
+export interface ActivationUserRecord {
+  id: number;
+  status: UserStatus;
 }

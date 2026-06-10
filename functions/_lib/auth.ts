@@ -7,6 +7,7 @@ export const SESSION_COOKIE = "tipovacka_session";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 const PBKDF2_ITERATIONS = 120000;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function assertSessionConfig(env: Env): void {
   if (!env.SESSION_SECRET) {
@@ -121,19 +122,12 @@ export function normalizeEmail(email: unknown): string {
   return String(email || "").trim().toLowerCase();
 }
 
+export function validateEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
+
 export function normalizeNicknameInput(nickname: unknown): string {
   return String(nickname || "").trim();
-}
-
-export function createActivationCode(): string {
-  const randomNumber = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-  return String(randomNumber).padStart(6, "0");
-}
-
-export async function hashActivationCode(code: string): Promise<string> {
-  const bytes = new TextEncoder().encode(String(code));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return hexEncode(new Uint8Array(digest));
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -143,10 +137,6 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-  if (!storedHash || typeof storedHash !== "string") {
-    return false;
-  }
-
   const parts = storedHash.split("$");
   if (parts.length !== 4 || parts[0] !== "pbkdf2_sha256") {
     return false;

@@ -1,7 +1,16 @@
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
+
+DROP TABLE IF EXISTS guesses;
+DROP TABLE IF EXISTS movies;
+DROP TABLE IF EXISTS faq_entries;
+DROP TABLE IF EXISTS imf_coin_history;
+DROP TABLE IF EXISTS user_auth_identities;
+DROP TABLE IF EXISTS activation_codes;
+DROP TABLE IF EXISTS rounds;
+DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   nickname TEXT NOT NULL COLLATE NOCASE UNIQUE,
   email TEXT COLLATE NOCASE UNIQUE,
   status TEXT NOT NULL DEFAULT 'pending_activation' CHECK (
@@ -16,16 +25,16 @@ CREATE TABLE users (
 );
 
 CREATE TABLE activation_codes (
-  id TEXT PRIMARY KEY,
-  user_id TEXT,
-  code_hash TEXT NOT NULL UNIQUE,
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER,
+  code TEXT NOT NULL UNIQUE,
   consumed_date TEXT,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_auth_identities (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
   provider TEXT NOT NULL CHECK (
     provider IN ('local', 'google', 'facebook')
   ),
@@ -42,15 +51,15 @@ CREATE TABLE user_auth_identities (
 );
 
 CREATE TABLE imf_coin_history (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL,
   amount INTEGER NOT NULL,
   created_date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE rounds (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   season_key TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   date_from TEXT NOT NULL,
@@ -59,8 +68,8 @@ CREATE TABLE rounds (
 );
 
 CREATE TABLE movies (
-  id TEXT PRIMARY KEY,
-  round_id TEXT NOT NULL,
+  id INTEGER PRIMARY KEY,
+  round_id INTEGER NOT NULL,
   movie_title TEXT NOT NULL,
   poster_url TEXT,
   csfd_url TEXT,
@@ -70,10 +79,10 @@ CREATE TABLE movies (
 );
 
 CREATE TABLE guesses (
-  id TEXT PRIMARY KEY,
-  round_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  movie_id TEXT NOT NULL,
+  id INTEGER PRIMARY KEY,
+  round_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  movie_id INTEGER NOT NULL,
   guessed_revenue INTEGER,
   FOREIGN KEY (round_id) REFERENCES rounds(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -82,8 +91,17 @@ CREATE TABLE guesses (
 );
 
 CREATE TABLE faq_entries (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   question TEXT NOT NULL,
   answer TEXT NOT NULL,
   display_order INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_activation_codes_user_id ON activation_codes(user_id);
+CREATE INDEX idx_user_auth_identities_user_id ON user_auth_identities(user_id);
+CREATE INDEX idx_imf_coin_history_user_id_created_date ON imf_coin_history(user_id, created_date);
+CREATE INDEX idx_movies_round_id ON movies(round_id);
+CREATE INDEX idx_faq_entries_display_order ON faq_entries(display_order);
+
+PRAGMA foreign_keys = ON;

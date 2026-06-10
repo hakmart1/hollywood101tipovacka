@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
   signSession,
+  validateEmail,
   verifyPassword
 } from "../../_lib/auth";
 import type { Env, LoginAccountRecord, LoginRequestBody } from "../../_lib/types";
@@ -22,14 +23,18 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     payload = (await context.request.json()) as LoginRequestBody;
   } catch {
-    return json({ error: "Invalid JSON body." }, 400);
+    return json({ error: "Invalid request body." });
   }
 
   const email = normalizeEmail(payload.email);
   const password = payload.password;
 
   if (!email || !password) {
-    return json({ error: "Email and password are required." }, 400);
+    return json({ error: "Email and password are required." });
+  }
+
+  if (!validateEmail(email)) {
+    return json({ error: "Enter a valid email address." });
   }
 
   const account = await context.env.DB.prepare(
@@ -48,12 +53,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(email).first<LoginAccountRecord>();
 
   if (!account) {
-    return json({ error: "Invalid email or password." }, 401);
+    return json({ error: "Invalid email or password." });
   }
 
   const passwordValid = await verifyPassword(password, account.password_hash);
   if (!passwordValid) {
-    return json({ error: "Invalid email or password." }, 401);
+    return json({ error: "Invalid email or password." });
   }
 
   const now = new Date().toISOString();
@@ -71,7 +76,8 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   return new Response(
     JSON.stringify({
-      ok: true,
+      error: null,
+      message: "Login successful.",
       user: {
         id: account.id,
         nickname: account.nickname,

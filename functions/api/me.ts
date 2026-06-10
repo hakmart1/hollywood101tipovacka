@@ -18,7 +18,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   );
 
   if (!session) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ user: null, error: null });
   }
 
   const user = await context.env.DB.prepare(
@@ -28,8 +28,8 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     .first<UserRecord>();
 
   if (!user) {
-    return json({ error: "Unauthorized" }, 401);
+    return json({ user: null, error: null });
   }
 
-  return json({ user });
+  return json({ user, error: null });
 }
