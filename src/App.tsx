@@ -208,9 +208,10 @@ export default function App() {
                   type="email"
                   required
                   value={signupForm.email}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({ ...current, email: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setSignupForm((current) => ({ ...current, email: value }));
+                  }}
                 />
               </label>
             </p>
@@ -221,9 +222,10 @@ export default function App() {
                 <input
                   required
                   value={signupForm.nickname}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({ ...current, nickname: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setSignupForm((current) => ({ ...current, nickname: value }));
+                  }}
                 />
               </label>
             </p>
@@ -235,9 +237,10 @@ export default function App() {
                   type="password"
                   required
                   value={signupForm.password}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({ ...current, password: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setSignupForm((current) => ({ ...current, password: value }));
+                  }}
                 />
               </label>
             </p>
@@ -249,9 +252,10 @@ export default function App() {
                   type="password"
                   required
                   value={signupForm.passwordVerify}
-                  onChange={(event) =>
-                    setSignupForm((current) => ({ ...current, passwordVerify: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setSignupForm((current) => ({ ...current, passwordVerify: value }));
+                  }}
                 />
               </label>
             </p>
@@ -279,9 +283,10 @@ export default function App() {
                   type="email"
                   required
                   value={loginForm.email}
-                  onChange={(event) =>
-                    setLoginForm((current) => ({ ...current, email: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setLoginForm((current) => ({ ...current, email: value }));
+                  }}
                 />
               </label>
             </p>
@@ -293,9 +298,10 @@ export default function App() {
                   type="password"
                   required
                   value={loginForm.password}
-                  onChange={(event) =>
-                    setLoginForm((current) => ({ ...current, password: event.currentTarget.value }))
-                  }
+                  onChange={(event) => {
+                    const { value } = event.currentTarget;
+                    setLoginForm((current) => ({ ...current, password: value }));
+                  }}
                 />
               </label>
             </p>
