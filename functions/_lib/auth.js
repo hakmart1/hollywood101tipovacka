@@ -5,6 +5,8 @@ export const OAUTH_STATE_COOKIE = "tipovacka_oauth_state";
 export const SESSION_COOKIE = "tipovacka_session";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
+const PBKDF2_ITERATIONS = 120000;
+
 export function assertAuthConfig(env) {
   const required = [
     "GOOGLE_CLIENT_ID",
@@ -17,6 +19,12 @@ export function assertAuthConfig(env) {
     if (!env[key]) {
       throw new Error(`Missing required secret: ${key}`);
     }
+  }
+}
+
+export function assertSessionConfig(env) {
+  if (!env.SESSION_SECRET) {
+    throw new Error("Missing required secret: SESSION_SECRET");
   }
 }
 
@@ -111,6 +119,52 @@ export async function verifySession(token, secret) {
   return payload;
 }
 
+export function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+export function normalizeNicknameInput(nickname) {
+  return String(nickname || "").trim();
+}
+
+export function createActivationCode() {
+  const randomNumber = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
+  return String(randomNumber).padStart(6, "0");
+}
+
+export async function hashActivationCode(code) {
+  const bytes = new TextEncoder().encode(String(code));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return hexEncode(new Uint8Array(digest));
+}
+
+export async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const derived = await derivePasswordBytes(password, salt, PBKDF2_ITERATIONS);
+  return `pbkdf2_sha256$${PBKDF2_ITERATIONS}$${hexEncode(salt)}$${hexEncode(derived)}`;
+}
+
+export async function verifyPassword(password, storedHash) {
+  if (!storedHash || typeof storedHash !== "string") {
+    return false;
+  }
+
+  const parts = storedHash.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2_sha256") {
+    return false;
+  }
+
+  const iterations = Number(parts[1]);
+  const salt = hexDecode(parts[2]);
+  const expected = parts[3];
+  const actual = hexEncode(await derivePasswordBytes(password, salt, iterations));
+  return timingSafeEqual(actual, expected);
+}
+
+export function validatePassword(password) {
+  return typeof password === "string" && password.length >= 8 && password.length <= 128;
+}
+
 export async function findOrCreateGoogleUser(env, googleProfile) {
   const now = new Date().toISOString();
 
@@ -130,7 +184,7 @@ export async function findOrCreateGoogleUser(env, googleProfile) {
     .first();
 
   if (existingIdentity) {
-    await env.DB.prepare("UPDATE users SET last_login_at = ?1 WHERE id = ?2")
+    await env.DB.prepare("UPDATE users SET last_login_date = ?1 WHERE id = ?2")
       .bind(now, existingIdentity.id)
       .run();
 
@@ -156,7 +210,7 @@ export async function findOrCreateGoogleUser(env, googleProfile) {
         googleProfile.sub,
         googleProfile.email
       ),
-      env.DB.prepare("UPDATE users SET last_login_at = ?1 WHERE id = ?2")
+      env.DB.prepare("UPDATE users SET last_login_date = ?1 WHERE id = ?2")
         .bind(now, existingUserByEmail.id)
     ]);
 
@@ -169,7 +223,7 @@ export async function findOrCreateGoogleUser(env, googleProfile) {
   await env.DB.batch([
     env.DB.prepare(
       `INSERT INTO users
-        (id, nickname, email, status, role, activated_at, last_login_at, imf_coins_balance)
+        (id, nickname, email, status, role, activated_date, last_login_date, imf_coins_balance)
        VALUES (?1, ?2, ?3, 'active', 'player', ?4, ?4, 0)`
     ).bind(userId, nickname, googleProfile.email, now),
     env.DB.prepare(
@@ -221,6 +275,30 @@ function normalizeNickname(input) {
     .slice(0, 20) || "player";
 }
 
+async function derivePasswordBytes(password, salt, iterations) {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveBits"]
+  );
+
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    256
+  );
+
+  return new Uint8Array(bits);
+}
+
 async function createHmac(value, secret) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -259,6 +337,18 @@ function base64UrlEncodeBytes(bytes) {
   }
 
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function hexEncode(bytes) {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function hexDecode(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let index = 0; index < hex.length; index += 2) {
+    bytes[index / 2] = Number.parseInt(hex.slice(index, index + 2), 16);
+  }
+  return bytes;
 }
 
 function base64UrlDecode(value) {
