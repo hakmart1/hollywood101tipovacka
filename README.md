@@ -86,73 +86,53 @@ Recommended rule:
 
 For local-only resets, it is fine to recreate the local database from scratch. For the remote Cloudflare database, prefer forward-only migrations.
 
-## Google sign-in setup
+## Email activation auth
 
 This repo now includes:
 
-- `public/index.html`: a basic landing page with a Google sign-in button
-- `functions/api/*`: Cloudflare Pages Functions for Google auth and session handling
+- `public/index.html`: a basic landing page with sign-up, activation, and login forms
+- `functions/api/auth/signup.js`: creates a pending account with local email/password auth
+- `functions/api/auth/activate.js`: consumes the activation code and unlocks the account
+- `functions/api/auth/login.js`: verifies email/password and sets a signed session cookie
+- `functions/api/me.js`: returns the signed-in user from the session cookie
+- `functions/api/logout.js`: clears the session cookie
 
-### Worker routes
+### Current routes
 
-- `GET /api/auth/google/start`: redirects the browser to Google OAuth
-- `GET /api/auth/google/callback`: exchanges the code, creates or links the account, and sets a session cookie
-- `GET /api/me`: returns the signed-in user from the session cookie
-- `POST /api/logout`: clears the session cookie
+- `POST /api/auth/signup`
+- `POST /api/auth/activate`
+- `POST /api/auth/login`
+- `GET /api/me`
+- `POST /api/logout`
 
-### Google Cloud setup
+### Required Pages secret
 
-1. Open Google Cloud Console.
-2. Create or pick a project.
-3. Configure the OAuth consent screen.
-4. Create an OAuth client of type `Web application`.
-5. Add this redirect URI:
-
-```text
-https://YOUR_WORKER_DOMAIN/api/auth/google/callback
-```
-
-If you test on the default Workers domain, it will look like:
-
-```text
-https://hollywood101tipovacka.pages.dev/api/auth/google/callback
-```
-
-### Cloudflare Pages secrets
-
-Add the required Worker secrets:
+The email-first flow currently needs only one secret:
 
 ```bash
-yarn wrangler pages secret put GOOGLE_CLIENT_ID --project-name hollywood101tipovacka
-yarn wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name hollywood101tipovacka
-yarn wrangler pages secret put GOOGLE_REDIRECT_URI --project-name hollywood101tipovacka
 yarn wrangler pages secret put SESSION_SECRET --project-name hollywood101tipovacka
 ```
 
-Recommended values:
+`SESSION_SECRET` signs the login cookie after a successful login.
 
-- `GOOGLE_CLIENT_ID`: from Google Cloud OAuth client
-- `GOOGLE_CLIENT_SECRET`: from Google Cloud OAuth client
-- `GOOGLE_REDIRECT_URI`: the exact callback URL you registered in Google Cloud
-- `SESSION_SECRET`: a long random string used to sign login cookies
+### Optional debug variable
 
-### Deploy the Pages project
+If you want the sign-up endpoint to return the activation code in the JSON response while testing, add a Pages environment variable:
 
-After secrets are set:
+- name: `DEBUG_AUTH_CODES`
+- value: `true`
 
-```bash
-yarn wrangler pages deploy public --project-name hollywood101tipovacka
-```
+Do not keep that enabled for a real production flow.
 
-### Account creation and login flow
+### Current activation flow
 
-1. User clicks `Continue with Google` on the frontend.
-2. Worker redirects to Google.
-3. Google returns to `/api/auth/google/callback`.
-4. Worker exchanges the authorization code for tokens.
-5. Worker fetches the Google user profile.
-6. Worker checks `user_auth_identities` for `provider = 'google'`.
-7. If the identity exists, the existing account is used.
-8. If not, the Worker links by email when possible or creates a new `users` row and a new `user_auth_identities` row.
-9. Worker sets a signed session cookie.
-10. Frontend calls `/api/me` to detect the signed-in user.
+1. User signs up with nickname, email, and password.
+2. Backend creates a `pending_activation` user and stores a hashed activation code.
+3. User enters the activation code.
+4. Backend marks the user as `active`.
+5. User logs in with email and password.
+6. Backend sets a signed session cookie.
+
+### Real email delivery later
+
+The activation flow is ready for a real email sender, but this repo does not yet send emails through a provider. The next step can be wiring `signup` to Resend, MailChannels, or another email service.

@@ -3,9 +3,15 @@ import {
   readCookie,
   SESSION_COOKIE,
   verifySession
-} from "../_lib/auth.js";
+} from "../_lib/auth";
+import type { Env, UserRecord } from "../_lib/types";
 
-export async function onRequestGet(context) {
+interface PagesContext {
+  env: Env;
+  request: Request;
+}
+
+export async function onRequestGet(context: PagesContext): Promise<Response> {
   const session = await verifySession(
     readCookie(context.request, SESSION_COOKIE),
     context.env.SESSION_SECRET
@@ -19,7 +25,7 @@ export async function onRequestGet(context) {
     "SELECT id, nickname, email, role, status, imf_coins_balance FROM users WHERE id = ?1"
   )
     .bind(session.userId)
-    .first();
+    .first<UserRecord>();
 
   if (!user) {
     return json({ error: "Unauthorized" }, 401);
