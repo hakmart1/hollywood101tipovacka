@@ -4,512 +4,251 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Hollywood 101 Tipovacka</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --ink: #1c120d;
-        --paper: #fffaf2;
-        --gold: #f7c95e;
-        --gold-deep: #d89d22;
-        --accent: #c44d1d;
-        --accent-dark: #8c2f0e;
-        --panel: rgba(255, 248, 236, 0.88);
-        --line: rgba(28, 18, 13, 0.12);
-        --shadow: 0 24px 60px rgba(73, 36, 6, 0.14);
-        --success: #245d37;
-        --warning: #9c5a0d;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Space Grotesk", sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at top left, rgba(255, 216, 125, 0.68), transparent 28%),
-          radial-gradient(circle at right 20%, rgba(196, 77, 29, 0.25), transparent 24%),
-          linear-gradient(160deg, #fff8ed 0%, #ffe2c4 48%, #ffd1b5 100%);
-      }
-
-      .shell {
-        width: min(1160px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: 32px 0 56px;
-      }
-
-      .hero {
-        display: grid;
-        gap: 28px;
-        grid-template-columns: 1.15fr 0.85fr;
-        align-items: start;
-      }
-
-      .billboard,
-      .panel,
-      .auth-card {
-        background: var(--panel);
-        backdrop-filter: blur(12px);
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        box-shadow: var(--shadow);
-      }
-
-      .billboard {
-        padding: 34px;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .billboard::after {
-        content: "";
-        position: absolute;
-        inset: auto -40px -80px auto;
-        width: 220px;
-        height: 220px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(247, 201, 94, 0.55), transparent 70%);
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 0.8rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.6);
-      }
-
-      h1 {
-        margin: 18px 0 12px;
-        font-family: "Fraunces", serif;
-        font-size: clamp(2.8rem, 7vw, 5.5rem);
-        line-height: 0.95;
-        letter-spacing: -0.04em;
-      }
-
-      .lede {
-        max-width: 35rem;
-        font-size: 1.08rem;
-        line-height: 1.65;
-      }
-
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 24px;
-      }
-
-      .feature {
-        padding: 16px;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.52);
-        border: 1px solid rgba(28, 18, 13, 0.08);
-      }
-
-      .feature strong {
-        display: block;
-        margin-bottom: 8px;
-      }
-
-      .right-column {
-        display: grid;
-        gap: 18px;
-      }
-
-      .panel {
-        padding: 26px;
-      }
-
-      .panel h2,
-      .auth-card h2 {
-        margin: 0 0 10px;
-        font-family: "Fraunces", serif;
-        font-size: 2rem;
-      }
-
-      .auth-grid {
-        display: grid;
-        gap: 18px;
-      }
-
-      .auth-card {
-        padding: 22px;
-      }
-
-      .auth-card p,
-      .panel p {
-        margin: 0;
-        line-height: 1.6;
-      }
-
-      form {
-        display: grid;
-        gap: 12px;
-        margin-top: 16px;
-      }
-
-      label {
-        display: grid;
-        gap: 6px;
-        font-size: 0.92rem;
-        font-weight: 500;
-      }
-
-      input {
-        min-height: 48px;
-        padding: 0 14px;
-        border-radius: 14px;
-        border: 1px solid rgba(28, 18, 13, 0.14);
-        background: rgba(255, 255, 255, 0.9);
-        font: inherit;
-      }
-
-      button {
-        min-height: 52px;
-        padding: 0 18px;
-        border-radius: 16px;
-        border: 1px solid rgba(28, 18, 13, 0.1);
-        background: linear-gradient(180deg, var(--gold) 0%, var(--gold-deep) 100%);
-        color: var(--ink);
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-        transition: transform 140ms ease, box-shadow 140ms ease;
-        box-shadow: 0 14px 30px rgba(216, 157, 34, 0.25);
-      }
-
-      button:hover {
-        transform: translateY(-1px);
-      }
-
-      button.secondary {
-        background: rgba(255, 255, 255, 0.5);
-        box-shadow: none;
-      }
-
-      .status-card,
-      .hint-card {
-        padding: 16px 18px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.55);
-        border: 1px solid rgba(28, 18, 13, 0.08);
-      }
-
-      .status-label {
-        font-size: 0.78rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        opacity: 0.65;
-      }
-
-      .status-text,
-      .hint-text {
-        margin-top: 8px;
-        font-size: 1rem;
-        line-height: 1.55;
-      }
-
-      .hint-text code {
-        padding: 2px 6px;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.72);
-      }
-
-      .success {
-        color: var(--success);
-      }
-
-      .warning {
-        color: var(--warning);
-      }
-
-      .muted {
-        opacity: 0.72;
-      }
-
-      .logout-row {
-        display: flex;
-        justify-content: flex-end;
-      }
-
-      @media (max-width: 960px) {
-        .hero {
-          grid-template-columns: 1fr;
-        }
-
-        .feature-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 820px) {
-        .shell {
-          width: min(100% - 20px, 1160px);
-          padding-top: 20px;
-        }
-
-        .billboard,
-        .panel,
-        .auth-card {
-          border-radius: 22px;
-          padding: 22px;
-        }
-      }
-    </style>
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
-        <article class="billboard">
-          <div class="eyebrow">Hollywood 101 • Box Office League</div>
-          <h1>Start with email. Add Google later.</h1>
-          <p class="lede">
-            We are switching to a simpler first step: create a player account with
-            email and password, confirm it with an activation code, then log in and
-            use the game. Once this path is stable, Google sign-in can be layered on top.
+    <main>
+      <h1>Hollywood 101 Tipovacka</h1>
+
+      <p>
+        Login status:
+        <strong id="login-status">loading</strong>
+      </p>
+
+      <p id="user-info"></p>
+      <p id="output"></p>
+
+      <p>
+        <button id="signup-button" type="button" hidden>Sign up</button>
+        <button id="login-button" type="button" hidden>Login</button>
+        <button id="logout-button" type="button" hidden>Logout</button>
+      </p>
+
+      <p id="activation-code-output"></p>
+
+      <dialog id="signup-dialog">
+        <form id="signup-form" method="dialog">
+          <p><strong>Sign up</strong></p>
+          <p>
+            <label>
+              Email<br />
+              <input id="signup-email" name="email" type="email" required />
+            </label>
           </p>
+          <p>
+            <label>
+              Nickname<br />
+              <input id="signup-nickname" name="nickname" required />
+            </label>
+          </p>
+          <p>
+            <label>
+              Password<br />
+              <input id="signup-password" name="password" type="password" required />
+            </label>
+          </p>
+          <p>
+            <label>
+              Verify password<br />
+              <input id="signup-password-verify" name="passwordVerify" type="password" required />
+            </label>
+          </p>
+          <p>
+            <button id="signup-submit" type="submit">Create active user</button>
+            <button type="button" id="signup-cancel">Cancel</button>
+          </p>
+        </form>
+      </dialog>
 
-          <div class="feature-grid">
-            <div class="feature">
-              <strong>1. Sign up</strong>
-              Create a local account with nickname, email, and password.
-            </div>
-            <div class="feature">
-              <strong>2. Activate</strong>
-              Confirm the account with an activation code.
-            </div>
-            <div class="feature">
-              <strong>3. Log in</strong>
-              Receive a signed session cookie and enter the lobby.
-            </div>
-          </div>
-        </article>
-
-        <aside class="right-column">
-          <section class="panel">
-            <h2>Current status</h2>
-            <p class="muted">
-              The email activation flow is now the main route. Real email delivery
-              can be wired in next; for now the backend can optionally reveal the
-              activation code in debug mode.
-            </p>
-
-            <div class="status-card">
-              <div class="status-label">Session</div>
-              <div id="session-status" class="status-text">Checking session…</div>
-            </div>
-
-            <div id="debug-code-card" class="hint-card" hidden>
-              <div class="status-label">Debug activation code</div>
-              <div id="debug-code-text" class="hint-text"></div>
-            </div>
-
-            <div class="logout-row">
-              <button id="logout-button" class="secondary" type="button" hidden>
-                Sign out
-              </button>
-            </div>
-          </section>
-
-          <section class="auth-grid">
-            <article class="auth-card">
-              <h2>Create account</h2>
-              <p class="muted">This creates a local user in pending activation state.</p>
-              <form id="signup-form">
-                <label>
-                  Nickname
-                  <input name="nickname" autocomplete="nickname" required />
-                </label>
-                <label>
-                  Email
-                  <input name="email" type="email" autocomplete="email" required />
-                </label>
-                <label>
-                  Password
-                  <input name="password" type="password" autocomplete="new-password" required />
-                </label>
-                <button type="submit">Create account</button>
-              </form>
-            </article>
-
-            <article class="auth-card">
-              <h2>Activate account</h2>
-              <p class="muted">Enter the code you received to unlock login.</p>
-              <form id="activate-form">
-                <label>
-                  Email
-                  <input name="email" type="email" autocomplete="email" required />
-                </label>
-                <label>
-                  Activation code
-                  <input name="code" inputmode="numeric" required />
-                </label>
-                <button type="submit">Activate account</button>
-              </form>
-            </article>
-
-            <article class="auth-card">
-              <h2>Log in</h2>
-              <p class="muted">Only active accounts can receive a session.</p>
-              <form id="login-form">
-                <label>
-                  Email
-                  <input name="email" type="email" autocomplete="email" required />
-                </label>
-                <label>
-                  Password
-                  <input name="password" type="password" autocomplete="current-password" required />
-                </label>
-                <button type="submit">Log in</button>
-              </form>
-            </article>
-          </section>
-        </aside>
-      </section>
+      <dialog id="login-dialog">
+        <form id="login-form" method="dialog">
+          <p><strong>Login</strong></p>
+          <p>
+            <label>
+              Email<br />
+              <input id="login-email" name="email" type="email" required />
+            </label>
+          </p>
+          <p>
+            <label>
+              Password<br />
+              <input id="login-password" name="password" type="password" required />
+            </label>
+          </p>
+          <p>
+            <button id="login-submit" type="submit">Login</button>
+            <button type="button" id="login-cancel">Cancel</button>
+          </p>
+        </form>
+      </dialog>
     </main>
 
     <script>
-      const sessionStatus = document.getElementById("session-status");
+      const loginStatusElement = document.getElementById("login-status");
+      const userInfoElement = document.getElementById("user-info");
+      const outputElement = document.getElementById("output");
+      const activationCodeOutputElement = document.getElementById("activation-code-output");
+      const signupButton = document.getElementById("signup-button");
+      const loginButton = document.getElementById("login-button");
       const logoutButton = document.getElementById("logout-button");
-      const debugCodeCard = document.getElementById("debug-code-card");
-      const debugCodeText = document.getElementById("debug-code-text");
+      const signupDialog = document.getElementById("signup-dialog");
+      const loginDialog = document.getElementById("login-dialog");
 
-      function showStatus(message, tone) {
-        sessionStatus.textContent = message;
-        sessionStatus.className = "status-text" + (tone ? " " + tone : "");
+      function setOutput(message) {
+        outputElement.textContent = message || "";
       }
 
-      function showDebugCode(code) {
-        if (!code) {
-          debugCodeCard.hidden = true;
-          debugCodeText.textContent = "";
-          return;
-        }
-
-        debugCodeCard.hidden = false;
-        debugCodeText.innerHTML = "Use code <code>" + code + "</code> to activate the account.";
+      function setActivationCodeOutput(message) {
+        activationCodeOutputElement.textContent = message || "";
       }
 
-      async function postJson(path, payload) {
-        const response = await fetch(path, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+      function setLoggedOutState() {
+        loginStatusElement.textContent = "not-logged";
+        userInfoElement.textContent = "";
+        signupButton.hidden = false;
+        loginButton.hidden = false;
+        logoutButton.hidden = true;
+      }
 
-        let body = {};
-        try {
-          body = await response.json();
-        } catch {
-          body = {};
+      function setLoggedInState(user) {
+        if (user.status === "active") {
+          loginStatusElement.textContent = "logged and active user";
+        } else {
+          loginStatusElement.textContent = "logged but unactive user";
         }
 
-        return { response, body };
+        userInfoElement.textContent =
+          "User: " + user.nickname + " | Email: " + user.email + " | DB status: " + user.status;
+
+        signupButton.hidden = true;
+        loginButton.hidden = true;
+        logoutButton.hidden = false;
       }
 
       async function refreshSession() {
         try {
           const response = await fetch("/api/me", {
-            headers: { Accept: "application/json" }
+            headers: {
+              Accept: "application/json"
+            }
           });
 
           if (response.status === 401) {
-            showStatus("Not logged in yet. Create an account or log into an existing activated one.");
-            logoutButton.hidden = true;
-            return;
-          }
-
-          if (!response.ok) {
-            showStatus("Session check failed. Review the Pages function logs.", "warning");
-            logoutButton.hidden = true;
+            setLoggedOutState();
             return;
           }
 
           const payload = await response.json();
-          showStatus(
-            "Signed in as " + payload.user.nickname + " (" + payload.user.email + ").",
-            "success"
-          );
-          logoutButton.hidden = false;
-        } catch {
-          showStatus("Could not reach the auth API right now.", "warning");
-          logoutButton.hidden = true;
+
+          if (!response.ok) {
+            setOutput(payload.error || "Could not load session.");
+            setLoggedOutState();
+            return;
+          }
+
+          setLoggedInState(payload.user);
+        } catch (error) {
+          setOutput("Could not reach the backend functions.");
+          setLoggedOutState();
         }
       }
 
-      document.getElementById("signup-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const { response, body } = await postJson("/api/auth/signup", {
-          nickname: form.get("nickname"),
-          email: form.get("email"),
-          password: form.get("password")
-        });
-
-        if (!response.ok) {
-          showStatus(body.error || "Sign-up failed.", "warning");
-          showDebugCode(null);
-          return;
-        }
-
-        showStatus(body.message || "Account created.", "success");
-        showDebugCode(body.debugActivationCode);
+      signupButton.addEventListener("click", () => {
+        setOutput("");
+        signupDialog.showModal();
       });
 
-      document.getElementById("activate-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const { response, body } = await postJson("/api/auth/activate", {
-          email: form.get("email"),
-          code: form.get("code")
-        });
+      loginButton.addEventListener("click", () => {
+        setOutput("");
+        loginDialog.showModal();
+      });
 
-        if (!response.ok) {
-          showStatus(body.error || "Activation failed.", "warning");
+      document.getElementById("signup-cancel").addEventListener("click", () => {
+        signupDialog.close();
+      });
+
+      document.getElementById("login-cancel").addEventListener("click", () => {
+        loginDialog.close();
+      });
+
+      document.getElementById("signup-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const email = document.getElementById("signup-email").value.trim();
+        const nickname = document.getElementById("signup-nickname").value.trim();
+        const password = document.getElementById("signup-password").value;
+        const passwordVerify = document.getElementById("signup-password-verify").value;
+
+        if (password !== passwordVerify) {
+          setOutput("Passwords do not match.");
           return;
         }
 
-        showStatus(body.message || "Account activated.", "success");
+        const response = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            nickname,
+            password
+          })
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setOutput(payload.error || "Sign up failed.");
+          setActivationCodeOutput("");
+          return;
+        }
+
+        setOutput(payload.message || "User created.");
+        if (payload.debugActivationCode) {
+          setActivationCodeOutput("Debug activation code: " + payload.debugActivationCode);
+        } else {
+          setActivationCodeOutput("");
+        }
+        signupDialog.close();
+        event.target.reset();
       });
 
       document.getElementById("login-form").addEventListener("submit", async (event) => {
         event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const { response, body } = await postJson("/api/auth/login", {
-          email: form.get("email"),
-          password: form.get("password")
+
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
         });
 
+        const payload = await response.json();
+
         if (!response.ok) {
-          showStatus(body.error || "Login failed.", "warning");
+          setOutput(payload.error || "Login failed.");
           return;
         }
 
-        showStatus("Login successful. Session cookie stored.", "success");
-        showDebugCode(null);
-        refreshSession();
+        setOutput("Login successful.");
+        loginDialog.close();
+        event.target.reset();
+        await refreshSession();
       });
 
       logoutButton.addEventListener("click", async () => {
         await fetch("/api/logout", { method: "POST" });
-        showStatus("Signed out.");
-        logoutButton.hidden = true;
+        setOutput("Logged out.");
+        await refreshSession();
       });
 
       refreshSession();

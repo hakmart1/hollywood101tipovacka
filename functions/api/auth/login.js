@@ -50,10 +50,6 @@ export async function onRequestPost(context) {
     return json({ error: "Invalid email or password." }, 401);
   }
 
-  if (account.status !== "active") {
-    return json({ error: "Account is not activated yet." }, 403);
-  }
-
   const now = new Date().toISOString();
   await context.env.DB.prepare(
     "UPDATE users SET last_login_date = ?1 WHERE id = ?2"

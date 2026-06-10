@@ -75,7 +75,7 @@ export async function onRequestPost(context) {
 
   return json({
     ok: true,
-    message: "Account created. Activate it with the code before logging in.",
+    message: "Account created in unactive state.",
     debugActivationCode: context.env.DEBUG_AUTH_CODES === "true" ? activationCode : undefined
   }, 201);
 }
