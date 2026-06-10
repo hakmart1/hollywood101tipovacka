@@ -1,7 +1,10 @@
 interface D1Result<T = Record<string, unknown>> {
   results?: T[];
   success: boolean;
-  meta: Record<string, unknown>;
+  meta: {
+    last_row_id?: number;
+    [key: string]: unknown;
+  };
 }
 
 interface D1PreparedStatement {

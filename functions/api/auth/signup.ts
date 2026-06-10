@@ -53,24 +53,35 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: "This nickname is already taken." });
   }
 
-  const passwordHash = await hashPassword(password);
+  try {
+    const passwordHash = await hashPassword(password);
 
-  const createdUser = await context.env.DB.prepare(
-    `INSERT INTO users
-      (nickname, email, status, role, activated_date, last_login_date, imf_coins_balance)
-     VALUES (?1, ?2, 'pending_activation', 'player', NULL, NULL, 0)
-     RETURNING id`
-  ).bind(nickname, email).first<{ id: number }>();
+    const insertUserResult = await context.env.DB.prepare(
+      `INSERT INTO users
+        (nickname, email, status, role, activated_date, last_login_date, imf_coins_balance)
+       VALUES (?1, ?2, 'pending_activation', 'player', NULL, NULL, 0)`
+    ).bind(nickname, email).run();
 
-  if (!createdUser) {
-    throw new Error("Failed to create user.");
+    const insertedUserId =
+      typeof insertUserResult.meta.last_row_id === "number"
+        ? insertUserResult.meta.last_row_id
+        : (await context.env.DB.prepare("SELECT id FROM users WHERE email = ?1").bind(email).first<{ id: number }>())
+            ?.id;
+
+    if (!insertedUserId) {
+      console.error("Signup insert succeeded but no user id was returned", { email });
+      return json({ error: "Could not create account right now." });
+    }
+
+    await context.env.DB.prepare(
+      `INSERT INTO user_auth_identities
+        (user_id, provider, provider_user_id, email, password_hash)
+       VALUES (?1, 'local', NULL, ?2, ?3)`
+    ).bind(insertedUserId, email, passwordHash).run();
+  } catch (error) {
+    console.error("Signup failed", error);
+    return json({ error: "Could not create account right now." });
   }
-
-  await context.env.DB.prepare(
-    `INSERT INTO user_auth_identities
-      (user_id, provider, provider_user_id, email, password_hash)
-     VALUES (?1, 'local', NULL, ?2, ?3)`
-  ).bind(createdUser.id, email, passwordHash).run();
 
   return json(
     {
