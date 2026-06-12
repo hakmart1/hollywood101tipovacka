@@ -6,7 +6,8 @@ import type {
 export const SESSION_COOKIE = "tipovacka_session";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
-const PBKDF2_ITERATIONS = 120000;
+// Cloudflare Workers WebCrypto rejects PBKDF2 iteration counts above 100,000.
+const PBKDF2_ITERATIONS = 100000;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function assertSessionConfig(env: Env): void {
