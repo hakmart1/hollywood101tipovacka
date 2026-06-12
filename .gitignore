@@ -2,4 +2,6 @@ node_modules/
 dist/
 .yarn/
 .idea/
+.wrangler/
+.claude/
 .DS_Store

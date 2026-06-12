@@ -1,0 +1,297 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #222;
+  background: #fff;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #ccc;
+  background: #f5f5f5;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.app-header .status {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.app-header .spacer {
+  flex: 1;
+}
+
+.timezone-select {
+  font: inherit;
+  font-size: 0.85rem;
+  max-width: 13rem;
+}
+
+.app-output {
+  padding: 0.35rem 1rem;
+  font-size: 0.85rem;
+  color: #444;
+  background: #fffbe6;
+  border-bottom: 1px solid #e0d9a8;
+}
+
+.app-main {
+  padding: 1rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #eee;
+}
+
+button.primary {
+  background: #2f6fdb;
+  border-color: #2f6fdb;
+  color: #fff;
+}
+
+button.primary:hover {
+  background: #245cba;
+}
+
+dialog.modal {
+  border: none;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  width: min(22rem, 90vw);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+dialog.modal h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+}
+
+.modal-note {
+  margin: 0 0 0.9rem;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.form-field {
+  margin-bottom: 0.75rem;
+}
+
+.form-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.form-field input:focus {
+  outline: 2px solid #2f6fdb;
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+}
+
+.admin-nav a {
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  color: #444;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+
+.admin-nav a.active {
+  border-color: #ccc;
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.admin-page h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+.data-table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #ccc;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+}
+
+.data-table th {
+  background: #f5f5f5;
+}
+
+.data-table td.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.user-card {
+  display: inline-block;
+  padding: 1rem 1.25rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.user-card h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.user-card dl {
+  display: grid;
+  grid-template-columns: max-content auto;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.user-card dt {
+  font-weight: 600;
+}
+
+.user-card dd {
+  margin: 0;
+}
+
+.contest-form {
+  max-width: 44rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.contest-form h3 {
+  font-size: 0.95rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.form-row .form-field {
+  flex: 1;
+}
+
+.movie-row {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.movie-row legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+
+.round-card {
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  display: inline-block;
+  min-width: 28rem;
+}
+
+.round-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.round-dates {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.revenue-edit {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.revenue-edit input {
+  width: 9rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.coin-history {
+  margin-top: 1.5rem;
+}
+
+.coin-history h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+
+.amount-plus {
+  color: #1a7f37;
+}
+
+.amount-minus {
+  color: #c0392b;
+}

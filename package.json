@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "npx wrangler pages dev dist --binding SESSION_SECRET=local-dev-secret --port 8788",
     "build": "vite build",
     "preview": "vite preview"
   },

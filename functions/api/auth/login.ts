@@ -45,6 +45,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
         users.role,
         users.status,
         users.imf_coins_balance,
+        users.timezone,
         user_auth_identities.password_hash
       FROM users
       INNER JOIN user_auth_identities ON user_auth_identities.user_id = users.id
@@ -84,7 +85,8 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
         email: account.email,
         role: account.role,
         status: account.status,
-        imf_coins_balance: account.imf_coins_balance
+        imf_coins_balance: account.imf_coins_balance,
+        timezone: account.timezone
       }
     }),
     {
