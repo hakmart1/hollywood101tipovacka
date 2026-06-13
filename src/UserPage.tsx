@@ -21,7 +21,7 @@ interface UserPageProps {
   onSessionRefresh: () => Promise<void>;
 }
 
-const LOW_BALANCE_THRESHOLD = 100_000;
+const LOW_BALANCE_THRESHOLD = 200_000;
 
 export default function UserPage({ user, onMessage, onSessionRefresh }: UserPageProps) {
   const [history, setHistory] = useState<CoinHistoryEntry[] | null>(null);
@@ -69,22 +69,22 @@ export default function UserPage({ user, onMessage, onSessionRefresh }: UserPage
   return (
     <div className="user-page">
       <section className="user-card">
-        <h2>User detail</h2>
+        <h2>Detail účtu</h2>
         <dl>
           <dt>Id</dt>
           <dd>{user.id}</dd>
-          <dt>Nickname</dt>
+          <dt>Přezdívka</dt>
           <dd>{user.nickname}</dd>
-          <dt>Email</dt>
+          <dt>E-mail</dt>
           <dd>{user.email}</dd>
           <dt>Role</dt>
           <dd>{user.role}</dd>
-          <dt>DB status</dt>
+          <dt>Stav</dt>
           <dd>{user.status}</dd>
-          <dt>IMF coins</dt>
+          <dt>IMF mince</dt>
           <dd>{user.imf_coins_balance.toLocaleString("en-US")}</dd>
         </dl>
-        {user.status === "active" && user.imf_coins_balance < LOW_BALANCE_THRESHOLD ? (
+        {user.status === "active" && user.imf_coins_balance <= LOW_BALANCE_THRESHOLD ? (
           <div className="form-actions">
             <button
               type="button"
@@ -92,25 +92,25 @@ export default function UserPage({ user, onMessage, onSessionRefresh }: UserPage
               disabled={busy}
               onClick={() => void handleAskForCoins()}
             >
-              Ask for more coins
+              Požádat o další mince
             </button>
           </div>
         ) : null}
       </section>
 
       <section className="coin-history">
-        <h2>IMF coins history</h2>
+        <h2>Historie IMF mincí</h2>
         {history === null ? (
-          <p>Loading…</p>
+          <p>Načítání…</p>
         ) : history.length === 0 ? (
-          <p>No coin transactions yet.</p>
+          <p>Zatím žádné transakce.</p>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Amount</th>
-                <th>Reason</th>
+                <th>Datum</th>
+                <th>Částka</th>
+                <th>Důvod</th>
               </tr>
             </thead>
             <tbody>

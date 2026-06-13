@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import AdminCodesPage from "./AdminCodesPage";
 import AdminContestsPage from "./AdminContestsPage";
+import HomeContests from "./HomeContests";
+import HomeResults from "./HomeResults";
+import ResultsArchivePage from "./ResultsArchivePage";
+import RulesPage from "./RulesPage";
 import UserPage from "./UserPage";
-import { availableTimeZones, browserTimeZone } from "./datetime";
+import { availableTimeZones, browserTimeZone, timeZoneLabel } from "./datetime";
 
 type UserStatus = "pending_activation" | "active" | "suspended" | "deactivated";
 
@@ -34,7 +38,7 @@ interface LogoutResponse extends ApiErrorResponse {
 
 type LoginState = "loading" | "not-logged" | "logged but unactive user" | "logged and active user";
 
-type Route = "home" | "user" | "admin-codes" | "admin-contests";
+type Route = "home" | "user" | "rules" | "history" | "admin-codes" | "admin-contests";
 
 const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests"];
 
@@ -60,6 +64,12 @@ function readRoute(): Route {
   }
   if (hash === "#/admin/contests") {
     return "admin-contests";
+  }
+  if (hash === "#/rules") {
+    return "rules";
+  }
+  if (hash === "#/results") {
+    return "history";
   }
   return "home";
 }
@@ -118,11 +128,30 @@ function Modal({ title, onClose, children }: ModalProps) {
   );
 }
 
+function BrandLogo({ className }: { className?: string }) {
+  // Director's chair logo (black chair on a yellow tile).
+  return (
+    <svg className={className} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="48" height="48" rx="8" fill="#f0c419" />
+      <rect x="13" y="12.5" width="22" height="5" rx="1.5" fill="#1b1b1b" />
+      <rect x="11.5" y="24.5" width="25" height="4.5" rx="1.5" fill="#1b1b1b" />
+      <g stroke="#1b1b1b" strokeWidth="2.6" strokeLinecap="round">
+        <line x1="15.5" y1="17.5" x2="16.5" y2="25" />
+        <line x1="32.5" y1="17.5" x2="31.5" y2="25" />
+        <line x1="16" y1="29" x2="32" y2="42" />
+        <line x1="32" y1="29" x2="16" y2="42" />
+        <line x1="13.5" y1="42" x2="18.5" y2="42" />
+        <line x1="29.5" y1="42" x2="34.5" y2="42" />
+      </g>
+    </svg>
+  );
+}
+
 export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [output, setOutput] = useState("");
+  const [, setOutput] = useState("");
   const [signupOpen, setSignupOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [activateOpen, setActivateOpen] = useState(false);
@@ -324,88 +353,97 @@ export default function App() {
   return (
     <>
       <header className="app-header">
-        <h1>Hollywood 101 Tipovacka</h1>
-
-        <span className="status">
-          Login status: <strong>{loginState}</strong>
-        </span>
-
-        {currentUser ? (
-          <span className="status">
-            {currentUser.nickname} ({currentUser.email})
+        <a className="brand" href="#/">
+          <BrandLogo className="brand-logo" />
+          <span className="brand-name">
+            Hollywood&nbsp;101 <strong>Tipovačka</strong>
           </span>
-        ) : null}
+        </a>
 
-        {currentUser?.role === "admin" ? (
-          <span className="status">
-            Time zone:{" "}
-            <select
-              className="timezone-select"
-              value={currentUser.timezone || browserTimeZone()}
-              onChange={(event) => void handleTimezoneChange(event.currentTarget.value)}
-            >
-              {availableTimeZones().map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
-              ))}
-            </select>
-          </span>
-        ) : null}
+        <div className="auth">
+          {loginState === "not-logged" ? (
+            <>
+              <button type="button" className="ghost" onClick={() => setSignupOpen(true)}>
+                Registrace
+              </button>
+              <button type="button" className="primary" onClick={() => setLoginOpen(true)}>
+                Přihlásit
+              </button>
+            </>
+          ) : null}
 
-        <span className="spacer" />
-
-        {loginState === "not-logged" ? (
-          <>
-            <button type="button" onClick={() => setSignupOpen(true)}>
-              Sign up
-            </button>
-            <button type="button" onClick={() => setLoginOpen(true)}>
-              Login
-            </button>
-          </>
-        ) : null}
-
-        {isLogged ? (
-          <>
-            {currentUser && currentUser.status !== "active" ? (
-              <button type="button" onClick={() => setActivateOpen(true)}>
-                Activate account
+          {isLogged && currentUser ? (
+            <>
+              {currentUser.status !== "active" ? (
+                <button type="button" className="ghost" onClick={() => setActivateOpen(true)}>
+                  Aktivovat
+                </button>
+              ) : null}
+              <span className="user-chip">
+                {currentUser.nickname}
+                {currentUser.status !== "active" ? (
+                  <span className="user-badge">neaktivní</span>
+                ) : null}
+              </span>
+              <button type="button" className="ghost" onClick={handleLogout}>
+                Odhlásit
               </button>
-            ) : null}
-            {route !== "home" ? (
-              <button type="button" onClick={() => (window.location.hash = "#/")}>
-                Home
-              </button>
-            ) : null}
-            {route !== "user" ? (
-              <button type="button" onClick={() => (window.location.hash = "#/user")}>
-                User page
-              </button>
-            ) : null}
-            {currentUser?.role === "admin" && !ADMIN_ROUTES.includes(route) ? (
-              <button type="button" onClick={() => (window.location.hash = "#/admin/codes")}>
-                Admin
-              </button>
-            ) : null}
-            <button type="button" onClick={handleLogout}>
-              Logout
-            </button>
-          </>
-        ) : null}
+            </>
+          ) : null}
+        </div>
       </header>
 
-      {output ? <div className="app-output">{output}</div> : null}
+      <nav className="app-nav">
+        <a href="#/" className={route === "home" ? "active" : ""}>
+          Domů
+        </a>
+        <a href="#/results" className={route === "history" ? "active" : ""}>
+          Výsledky
+        </a>
+        <a href="#/rules" className={route === "rules" ? "active" : ""}>
+          Pravidla
+        </a>
+        {isLogged ? (
+          <a href="#/user" className={route === "user" ? "active" : ""}>
+            Můj účet
+          </a>
+        ) : null}
+        {currentUser?.role === "admin" ? (
+          <a href="#/admin/contests" className={ADMIN_ROUTES.includes(route) ? "active" : ""}>
+            Administrace
+          </a>
+        ) : null}
+      </nav>
 
       <main className="app-main">
         {ADMIN_ROUTES.includes(route) && currentUser?.role === "admin" ? (
           <section className="admin">
+            <div className="admin-toolbar">
+              <label>
+                Časové pásmo:{" "}
+                <select
+                  className="timezone-select"
+                  value={currentUser.timezone || ""}
+                  onChange={(event) => void handleTimezoneChange(event.currentTarget.value)}
+                >
+                  <option value="">Místní — {timeZoneLabel(browserTimeZone())}</option>
+                  {(currentUser.timezone && !availableTimeZones().includes(currentUser.timezone)
+                    ? [currentUser.timezone, ...availableTimeZones()]
+                    : availableTimeZones()
+                  ).map((zone) => (
+                    <option key={zone} value={zone}>
+                      {timeZoneLabel(zone)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <nav className="admin-nav">
-              <a href="#/admin/codes" className={route === "admin-codes" ? "active" : ""}>
-                Activation codes
-              </a>
               <a href="#/admin/contests" className={route === "admin-contests" ? "active" : ""}>
-                Contests
+                Tipovačky
+              </a>
+              <a href="#/admin/codes" className={route === "admin-codes" ? "active" : ""}>
+                Aktivační kódy
               </a>
             </nav>
             {route === "admin-codes" ? (
@@ -420,13 +458,31 @@ export default function App() {
         {route === "user" && currentUser ? (
           <UserPage user={currentUser} onMessage={setOutput} onSessionRefresh={refreshSession} />
         ) : null}
+
+        {route === "home" ? (
+          <>
+            <section className="hero">
+              <BrandLogo className="hero-logo" />
+              <div className="hero-text">
+                <h1>Hollywood 101 Tipovačka</h1>
+                <p>Tipni si víkendové tržby filmů, trefuj se co nejpřesněji a sbírej IMF coiny.</p>
+              </div>
+            </section>
+            <HomeContests user={currentUser} onMessage={setOutput} onSessionRefresh={refreshSession} />
+            <HomeResults onMessage={setOutput} />
+          </>
+        ) : null}
+
+        {route === "rules" ? <RulesPage /> : null}
+
+        {route === "history" ? <ResultsArchivePage onMessage={setOutput} /> : null}
       </main>
 
       {signupOpen ? (
-        <Modal title="Sign up" onClose={() => setSignupOpen(false)}>
+        <Modal title="Registrace" onClose={() => setSignupOpen(false)}>
           <form onSubmit={handleSignupSubmit}>
             <div className="form-field">
-              <label htmlFor="signup-email">Email</label>
+              <label htmlFor="signup-email">E-mail</label>
               <input
                 id="signup-email"
                 type="email"
@@ -440,7 +496,7 @@ export default function App() {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="signup-nickname">Nickname</label>
+              <label htmlFor="signup-nickname">Přezdívka</label>
               <input
                 id="signup-nickname"
                 required
@@ -452,7 +508,7 @@ export default function App() {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="signup-password">Password</label>
+              <label htmlFor="signup-password">Heslo</label>
               <input
                 id="signup-password"
                 type="password"
@@ -465,7 +521,7 @@ export default function App() {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="signup-password-verify">Verify password</label>
+              <label htmlFor="signup-password-verify">Heslo znovu</label>
               <input
                 id="signup-password-verify"
                 type="password"
@@ -479,10 +535,10 @@ export default function App() {
             </div>
             <div className="form-actions">
               <button type="button" onClick={() => setSignupOpen(false)}>
-                Cancel
+                Zrušit
               </button>
               <button type="submit" className="primary">
-                Create user
+                Vytvořit účet
               </button>
             </div>
           </form>
@@ -490,14 +546,14 @@ export default function App() {
       ) : null}
 
       {activateOpen && currentUser ? (
-        <Modal title="Activate account" onClose={() => setActivateOpen(false)}>
+        <Modal title="Aktivace účtu" onClose={() => setActivateOpen(false)}>
           <form onSubmit={handleActivateSubmit}>
             <p className="modal-note">
-              Enter the activation code for <strong>{currentUser.email}</strong>. Codes are handed
-              out by the admin — if you have not received one, you can remind him below.
+              Zadejte aktivační kód pro <strong>{currentUser.email}</strong>. Kódy rozdává
+              administrátor — pokud jste žádný nedostali, můžete mu níže poslat připomenutí.
             </p>
             <div className="form-field">
-              <label htmlFor="activation-code">Activation code</label>
+              <label htmlFor="activation-code">Aktivační kód</label>
               <input
                 id="activation-code"
                 required
@@ -511,13 +567,13 @@ export default function App() {
             </div>
             <div className="form-actions">
               <button type="button" onClick={() => void handleRequestCode()}>
-                Request code
+                Požádat o kód
               </button>
               <button type="button" onClick={() => setActivateOpen(false)}>
-                Cancel
+                Zrušit
               </button>
               <button type="submit" className="primary">
-                Activate
+                Aktivovat
               </button>
             </div>
           </form>
@@ -525,7 +581,7 @@ export default function App() {
       ) : null}
 
       {infoDialog ? (
-        <Modal title="Activation code request" onClose={() => setInfoDialog(null)}>
+        <Modal title="Žádost o aktivační kód" onClose={() => setInfoDialog(null)}>
           <p className="modal-note">{infoDialog}</p>
           <div className="form-actions">
             <button type="button" className="primary" onClick={() => setInfoDialog(null)}>
@@ -536,10 +592,10 @@ export default function App() {
       ) : null}
 
       {loginOpen ? (
-        <Modal title="Login" onClose={() => setLoginOpen(false)}>
+        <Modal title="Přihlášení" onClose={() => setLoginOpen(false)}>
           <form onSubmit={handleLoginSubmit}>
             <div className="form-field">
-              <label htmlFor="login-email">Email</label>
+              <label htmlFor="login-email">E-mail</label>
               <input
                 id="login-email"
                 type="email"
@@ -553,7 +609,7 @@ export default function App() {
               />
             </div>
             <div className="form-field">
-              <label htmlFor="login-password">Password</label>
+              <label htmlFor="login-password">Heslo</label>
               <input
                 id="login-password"
                 type="password"
@@ -567,10 +623,10 @@ export default function App() {
             </div>
             <div className="form-actions">
               <button type="button" onClick={() => setLoginOpen(false)}>
-                Cancel
+                Zrušit
               </button>
               <button type="submit" className="primary">
-                Login
+                Přihlásit
               </button>
             </div>
           </form>

@@ -10,18 +10,18 @@ interface PagesContext {
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
   if (!user) {
-    return json({ error: "You must be logged in to request an activation code." }, 401);
+    return json({ error: "Pro vyžádání aktivačního kódu musíte být přihlášeni." }, 401);
   }
 
   if (user.status !== "pending_activation" && user.status !== "deactivated") {
-    return json({ error: "Your account does not need activation." });
+    return json({ error: "Váš účet nepotřebuje aktivaci." });
   }
 
   // One request per calendar day (UTC), not a rolling 24-hour window.
   const today = new Date().toISOString().slice(0, 10);
   if (user.last_code_request_date && user.last_code_request_date.slice(0, 10) === today) {
     return json({
-      error: "You already requested an activation code today. You can ask again tomorrow."
+      error: "O aktivační kód jste dnes již požádali. Zkuste to znovu zítra."
     });
   }
 
@@ -34,6 +34,6 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   return json({
     error: null,
     message:
-      "Your request was recorded and the admin will be reminded to send you an activation code. Email delivery is not implemented yet."
+      "Vaše žádost byla zaznamenána a administrátor bude upozorněn, aby vám poslal aktivační kód. Odesílání e-mailů zatím není zprovozněno."
   });
 }

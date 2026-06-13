@@ -69,19 +69,32 @@ export interface ActivationCodeListRecord {
   id: number;
   code: string;
   consumed_date: string | null;
+  reserved_date: string | null;
   user_id: number | null;
   user_nickname: string | null;
   user_email: string | null;
   user_status: UserStatus | null;
 }
 
+export type RoundType = "standard" | "bonus";
+
 export interface RoundRecord {
   id: number;
-  season_key: string;
   title: string;
   date_from: string;
   date_to: string;
   description: string | null;
+  type: RoundType;
+}
+
+export interface AdminRoundRecord extends RoundRecord {
+  guess_count: number;
+  evaluated_date: string | null;
+}
+
+export interface UpdateRoundRequestBody {
+  date_from?: string;
+  date_to?: string;
 }
 
 export interface MovieRecord {
@@ -103,11 +116,30 @@ export interface CreateRoundMovieInput {
 
 export interface CreateRoundRequestBody {
   title?: string;
-  season_key?: string;
+  type?: string;
   date_from?: string;
   date_to?: string;
   description?: string;
   movies?: CreateRoundMovieInput[];
+}
+
+export interface GuessRequestBody {
+  movie_id?: number;
+  guessed_millions?: number | string;
+}
+
+export interface GuessRecord {
+  movie_id: number;
+  guessed_revenue: number;
+}
+
+export interface GuessTargetRecord {
+  id: number;
+  movie_title: string;
+  round_id: number;
+  round_title: string;
+  date_from: string;
+  date_to: string;
 }
 
 export interface ActivationCodeDeleteRecord {

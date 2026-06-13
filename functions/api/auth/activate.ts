@@ -72,7 +72,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: null, message: "Account is already active." });
   }
 
-  const ACTIVATION_BONUS = 1_000_000;
+  const ACTIVATION_BONUS = 2_000_000;
   // The signing bonus is paid only on the first activation, so users
   // re-activated after a code removal do not collect it again.
   const firstActivation = user.activated_date === null;
@@ -94,7 +94,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
       ).bind(ACTIVATION_BONUS, user.id),
       context.env.DB.prepare(
         "INSERT INTO imf_coin_history (user_id, amount, reason, created_date) VALUES (?1, ?2, ?3, ?4)"
-      ).bind(user.id, ACTIVATION_BONUS, "IMF signing bonus", now)
+      ).bind(user.id, ACTIVATION_BONUS, "Vstupní bonus IMF", now)
     );
   }
 

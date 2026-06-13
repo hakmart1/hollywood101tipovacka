@@ -5,41 +5,149 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  color: #222;
-  background: #fff;
+  color: #1f2330;
+  background: #eef0f4;
+  line-height: 1.45;
 }
 
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid #ccc;
-  background: #f5f5f5;
+  padding: 0.6rem 1.25rem;
+  background: #17181f;
+  color: #f4f4f5;
 }
 
-.app-header h1 {
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+}
+
+.brand-name {
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.brand-name strong {
+  color: #f0c419;
+  font-weight: 700;
+}
+
+.auth {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.user-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #17181f;
+  background: #f0c419;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: #4a4b55;
+  color: #f4f4f5;
+}
+
+button.ghost:hover {
+  background: #26272f;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0 1.25rem;
+  background: #f5f5f7;
+  border-bottom: 1px solid #ddd;
+}
+
+.app-nav a {
+  padding: 0.6rem 0.9rem;
+  text-decoration: none;
+  color: #444;
+  font-size: 0.92rem;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav a:hover {
+  color: #17181f;
+}
+
+.app-nav a.active {
+  color: #17181f;
+  font-weight: 600;
+  border-bottom-color: #f0c419;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  background: linear-gradient(120deg, #17181f 0%, #2c2030 55%, #5b2333 100%);
+  color: #fff;
+}
+
+.hero-logo {
+  width: 4rem;
+  height: 4rem;
+  flex: none;
+}
+
+.hero-text h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.5rem;
+  color: #f0c419;
+}
+
+.hero-text p {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  color: #e7e2d6;
 }
 
-.app-header .status {
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
   font-size: 0.85rem;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.app-header .spacer {
-  flex: 1;
+  color: #555;
 }
 
 .timezone-select {
   font: inherit;
   font-size: 0.85rem;
-  max-width: 13rem;
+  max-width: 16rem;
 }
 
 .app-output {
@@ -51,20 +159,25 @@ body {
 }
 
 .app-main {
-  padding: 1rem;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
 }
 
 button {
   font: inherit;
-  padding: 0.35rem 0.8rem;
-  border: 1px solid #aaa;
-  border-radius: 4px;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #cbd0d8;
+  border-radius: 6px;
   background: #fff;
+  color: #1f2330;
   cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
 }
 
 button:hover {
-  background: #eee;
+  background: #f1f2f5;
+  border-color: #b3bac4;
 }
 
 button.primary {
@@ -165,35 +278,68 @@ button:disabled {
 }
 
 .data-table {
+  width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
 
 .data-table th,
 .data-table td {
-  border: 1px solid #ccc;
-  padding: 0.4rem 0.7rem;
+  padding: 0.5rem 0.7rem;
   text-align: left;
+  border-bottom: 1px solid #edeef2;
 }
 
 .data-table th {
-  background: #f5f5f5;
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e4e6eb;
+}
+
+.data-table tbody tr:hover {
+  background: #f7f8fa;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .data-table td.code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
 }
 
-.user-card {
-  display: inline-block;
-  padding: 1rem 1.25rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+.card,
+.user-card,
+.round-card,
+.contest-form,
+.coin-history {
+  background: #fff;
+  border: 1px solid #e4e6eb;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(20, 23, 40, 0.06);
+  padding: 1.15rem 1.3rem;
+  margin-bottom: 1.25rem;
 }
 
 .user-card h2 {
   margin-top: 0;
   font-size: 1rem;
+}
+
+/* Gold-underlined section titles across the pages. */
+.home-results > h2,
+.rules-page h2,
+.coin-history h2,
+.admin-page > h2,
+.archive-page > h2 {
+  color: #17181f;
+  border-bottom: 2px solid #f0c419;
+  padding-bottom: 0.3rem;
+  display: inline-block;
 }
 
 .user-card dl {
@@ -213,10 +359,6 @@ button:disabled {
 
 .contest-form {
   max-width: 44rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
 }
 
 .contest-form h3 {
@@ -246,24 +388,48 @@ button:disabled {
   padding: 0 0.3rem;
 }
 
-.round-card {
-  margin-bottom: 1.5rem;
-  padding: 0.9rem 1.1rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  display: inline-block;
-  min-width: 28rem;
-}
-
 .round-card h3 {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  color: #17181f;
 }
 
 .round-dates {
   font-weight: 400;
   font-size: 0.85rem;
   color: #555;
+}
+
+.round-status {
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.round-status.evaluated {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.round-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.date-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.date-edit input {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
 }
 
 .revenue-edit {
@@ -277,6 +443,143 @@ button:disabled {
   border: 1px solid #bbb;
   border-radius: 4px;
   font: inherit;
+}
+
+.guess-edit {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.guess-edit input {
+  width: 11rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.guess-placed {
+  font-weight: 600;
+}
+
+.guess-hint {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.guess-caption {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0 0 0.75rem;
+}
+
+.no-contest {
+  color: #777;
+}
+
+.home-results {
+  margin-top: 2rem;
+}
+
+.home-results h2 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.home-results h4 {
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.movie-result {
+  margin: 0.75rem 0 1rem;
+}
+
+.movie-result h5 {
+  font-size: 0.9rem;
+  margin: 0 0 0.4rem;
+}
+
+.coins-breakdown {
+  color: #777;
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
+.archive-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-width: 44rem;
+}
+
+.archive-list li {
+  background: #fff;
+  border: 1px solid #e4e6eb;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(20, 23, 40, 0.06);
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+}
+
+.archive-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.archive-row:hover {
+  background: #f5f5f5;
+}
+
+.archive-title {
+  font-weight: 600;
+}
+
+.archive-meta {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.archive-list .round-card {
+  border: none;
+  border-top: 1px solid #edeef2;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+  margin: 0;
+}
+
+.rules-page {
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+.rules-page h2 {
+  font-size: 1.2rem;
+  margin: 0 0 1rem;
+}
+
+.rules-page h3 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.4rem;
+}
+
+.rules-page ul {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.rules-note {
+  font-size: 0.88rem;
+  color: #555;
 }
 
 .coin-history {
@@ -294,4 +597,23 @@ button:disabled {
 
 .amount-minus {
   color: #c0392b;
+}
+
+.rank-up {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.rank-down {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.rank-same {
+  color: #999;
+}
+
+.rank-new {
+  color: #2f6fdb;
+  font-size: 0.8rem;
 }

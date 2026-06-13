@@ -1,11 +1,11 @@
 import { requireAdmin } from "../../../_lib/admin";
 import { json } from "../../../_lib/auth";
 import type {
+  AdminRoundRecord,
   CreateRoundMovieInput,
   CreateRoundRequestBody,
   Env,
-  MovieRecord,
-  RoundRecord
+  MovieRecord
 } from "../../../_lib/types";
 
 interface PagesContext {
@@ -27,15 +27,6 @@ function normalizeUrl(value: unknown): string | null {
   return url;
 }
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
@@ -43,8 +34,18 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const rounds = await context.env.DB.prepare(
-    "SELECT id, season_key, title, date_from, date_to, description FROM rounds ORDER BY date_from DESC, id DESC"
-  ).all<RoundRecord>();
+    `SELECT
+        rounds.id,
+        rounds.title,
+        rounds.date_from,
+        rounds.date_to,
+        rounds.description,
+        rounds.type,
+        rounds.evaluated_date,
+        (SELECT COUNT(*) FROM guesses WHERE guesses.round_id = rounds.id) AS guess_count
+      FROM rounds
+      ORDER BY rounds.date_from DESC, rounds.id DESC`
+  ).all<AdminRoundRecord>();
 
   const movies = await context.env.DB.prepare(
     "SELECT id, round_id, movie_title, poster_url, csfd_url, imdb_url, actual_revenue FROM movies ORDER BY id"
@@ -83,10 +84,9 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   const dateFrom = String(payload.date_from || "").trim();
   const dateTo = String(payload.date_to || "").trim();
   const description = String(payload.description || "").trim() || null;
-  const seasonKey = String(payload.season_key || "").trim() || slugify(title);
 
   if (!title) {
-    return json({ error: "Contest title is required." });
+    return json({ error: "Round title is required." });
   }
 
   if (!DATETIME_REGEX.test(dateFrom) || !DATETIME_REGEX.test(dateTo)) {
@@ -97,9 +97,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: "The start must not be after the end." });
   }
 
-  if (!seasonKey) {
-    return json({ error: "Season key could not be derived from the title. Enter it manually." });
-  }
+  const type = payload.type === "bonus" ? "bonus" : "standard";
 
   const movieInputs: CreateRoundMovieInput[] = Array.isArray(payload.movies) ? payload.movies : [];
   const movies = movieInputs
@@ -117,8 +115,8 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   try {
     const roundInsert = await context.env.DB.prepare(
-      "INSERT INTO rounds (season_key, title, date_from, date_to, description) VALUES (?1, ?2, ?3, ?4, ?5)"
-    ).bind(seasonKey, title, dateFrom, dateTo, description).run();
+      "INSERT INTO rounds (title, date_from, date_to, description, type) VALUES (?1, ?2, ?3, ?4, ?5)"
+    ).bind(title, dateFrom, dateTo, description, type).run();
 
     const roundId = roundInsert.meta.last_row_id;
 
@@ -132,14 +130,10 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
     return json({
       error: null,
-      message: `Contest "${title}" created with ${movies.length} movie(s).`
+      message: `Round "${title}" created with ${movies.length} movie(s).`
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("UNIQUE")) {
-      return json({ error: `Season key "${seasonKey}" already exists. Choose a different one.` });
-    }
     console.error("Round creation failed", error);
-    return json({ error: "Could not create the contest right now." });
+    return json({ error: "Could not create the round right now." });
   }
 }

@@ -7,8 +7,8 @@ interface PagesContext {
   request: Request;
 }
 
-const LOW_BALANCE_THRESHOLD = 100_000;
-const GRANT_AMOUNT = 250_000;
+const LOW_BALANCE_THRESHOLD = 200_000;
+const GRANT_AMOUNT = 500_000;
 // Exactly 14 x 24 hours in absolute time.
 const COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -22,7 +22,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: "Only activated accounts can ask for a bailout." });
   }
 
-  if (user.imf_coins_balance >= LOW_BALANCE_THRESHOLD) {
+  if (user.imf_coins_balance > LOW_BALANCE_THRESHOLD) {
     return json({ error: "You still have enough IMF coins." });
   }
 
@@ -44,7 +44,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     ).bind(GRANT_AMOUNT, now, user.id),
     context.env.DB.prepare(
       "INSERT INTO imf_coin_history (user_id, amount, reason, created_date) VALUES (?1, ?2, ?3, ?4)"
-    ).bind(user.id, GRANT_AMOUNT, "IMF bailout package", now)
+    ).bind(user.id, GRANT_AMOUNT, "Záchranný balíček IMF", now)
   ]);
 
   return json({

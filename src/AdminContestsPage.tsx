@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { formatDateTime, zonedToUtcIso } from "./datetime";
+import { formatDateTime, utcToZonedInput, weekTitle, zonedToUtcIso } from "./datetime";
 
 interface RoundMovie {
   id: number;
@@ -11,13 +11,17 @@ interface RoundMovie {
   actual_revenue: number | null;
 }
 
+type RoundType = "standard" | "bonus";
+
 interface Round {
   id: number;
-  season_key: string;
   title: string;
   date_from: string;
   date_to: string;
   description: string | null;
+  type: RoundType;
+  guess_count: number;
+  evaluated_date: string | null;
   movies: RoundMovie[];
 }
 
@@ -48,7 +52,7 @@ const emptyMovieRow: MovieFormRow = {
 
 const emptyForm = {
   title: "",
-  season_key: "",
+  type: "standard" as RoundType,
   date_from: "",
   date_to: "",
   description: ""
@@ -60,7 +64,24 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   const [form, setForm] = useState(emptyForm);
   const [movieRows, setMovieRows] = useState<MovieFormRow[]>([emptyMovieRow]);
   const [revenueDrafts, setRevenueDrafts] = useState<Record<number, string>>({});
+  const [autoTitle, setAutoTitle] = useState("");
+  const [dateEdits, setDateEdits] = useState<Record<number, { from: string; to: string }>>({});
   const [busy, setBusy] = useState(false);
+
+  // Prefill the title as "YYYY Week WW" from the start date, unless the admin
+  // has typed his own title (i.e. it no longer matches the last suggestion).
+  function applyDateFrom(value: string) {
+    const suggested = value ? weekTitle(value) : "";
+    setForm((current) => {
+      const keepManual = current.title.trim() !== "" && current.title !== autoTitle;
+      return {
+        ...current,
+        date_from: value,
+        title: keepManual ? current.title : suggested
+      };
+    });
+    setAutoTitle(suggested);
+  }
 
   useEffect(() => {
     void loadRounds();
@@ -74,12 +95,101 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     const payload = (await response.json()) as RoundsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load contests.");
+      onMessage(payload.error || "Could not load rounds.");
       setRounds([]);
       return;
     }
 
     setRounds(payload.rounds || []);
+  }
+
+  async function handleDeleteContest(round: Round) {
+    if (!window.confirm(`Smazat tipovačku „${round.title}“?`)) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/rounds/${round.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" }
+      });
+      const payload = (await response.json()) as RoundsResponse;
+      onMessage(payload.error || payload.message || "Done.");
+      if (!payload.error) {
+        await loadRounds();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEditDates(round: Round) {
+    setDateEdits((current) => ({
+      ...current,
+      [round.id]: {
+        from: utcToZonedInput(round.date_from, timezone),
+        to: utcToZonedInput(round.date_to, timezone)
+      }
+    }));
+  }
+
+  function cancelEditDates(roundId: number) {
+    setDateEdits((current) => {
+      const next = { ...current };
+      delete next[roundId];
+      return next;
+    });
+  }
+
+  async function saveDates(round: Round) {
+    const edit = dateEdits[round.id];
+    if (!edit || !edit.from || !edit.to) {
+      onMessage("Both start and end date-times are required.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/rounds/${round.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        },
+        body: JSON.stringify({
+          date_from: zonedToUtcIso(edit.from, timezone),
+          date_to: zonedToUtcIso(edit.to, timezone)
+        })
+      });
+      const payload = (await response.json()) as RoundsResponse;
+      onMessage(payload.error || payload.message || "Done.");
+      if (!payload.error) {
+        cancelEditDates(round.id);
+        await loadRounds();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleEvaluate(round: Round) {
+    if (!window.confirm(`Vyhodnotit „${round.title}“? Tím se tipovačka uzavře.`)) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/rounds/${round.id}`, {
+        method: "POST",
+        headers: { Accept: "application/json" }
+      });
+      const payload = (await response.json()) as RoundsResponse;
+      onMessage(payload.error || payload.message || "Done.");
+      if (!payload.error) {
+        await loadRounds();
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   function updateMovieRow(index: number, field: keyof MovieFormRow, value: string) {
@@ -100,7 +210,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         },
         body: JSON.stringify({
           title: form.title,
-          season_key: form.season_key,
+          type: form.type,
           date_from: zonedToUtcIso(form.date_from, timezone),
           date_to: zonedToUtcIso(form.date_to, timezone),
           description: form.description,
@@ -111,8 +221,10 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       onMessage(payload.error || payload.message || "Done.");
 
       if (!payload.error) {
-        setForm(emptyForm);
+        // Keep the chosen type as the default for the next round.
+        setForm({ ...emptyForm, type: form.type });
         setMovieRows([emptyMovieRow]);
+        setAutoTitle("");
         setFormOpen(false);
         await loadRounds();
       }
@@ -121,14 +233,46 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     }
   }
 
+  // Box office is entered in millions (2 decimals), like the players' guesses.
+  // Stored value is in full dollars, so show it divided by a million.
+  function effectiveRevenue(movie: RoundMovie): string {
+    const draft = revenueDrafts[movie.id];
+    if (draft !== undefined) {
+      return draft;
+    }
+    return movie.actual_revenue !== null ? String(movie.actual_revenue / 1_000_000) : "";
+  }
+
+  // Button label/action reflects what saving will actually do.
+  function revenueAction(movie: RoundMovie): { label: string; disabled: boolean } {
+    const value = effectiveRevenue(movie).trim();
+    const hasResult = movie.actual_revenue !== null;
+    if (hasResult && value === "") {
+      return { label: "Odebrat", disabled: busy };
+    }
+    if (hasResult) {
+      return { label: "Upravit", disabled: busy };
+    }
+    return { label: "Uložit", disabled: busy || value === "" };
+  }
+
   async function handleSaveRevenue(movie: RoundMovie) {
-    const draft = (revenueDrafts[movie.id] ?? "").trim();
+    const raw = effectiveRevenue(movie).trim();
     let revenue: number | null = null;
 
-    if (draft !== "") {
-      revenue = Number(draft);
-      if (!Number.isInteger(revenue) || revenue < 0) {
-        onMessage("Box office result must be a non-negative whole number.");
+    if (raw !== "") {
+      const millions = Number(raw);
+      if (!Number.isFinite(millions) || millions < 0) {
+        onMessage("Tržby zadejte v milionech, např. 123,45.");
+        return;
+      }
+      // Convert millions (2 decimals) to full dollars, like the guesses.
+      revenue = Math.round(millions * 100) * 10_000;
+    }
+
+    // Clearing an existing result is destructive — confirm it.
+    if (revenue === null && movie.actual_revenue !== null) {
+      if (!window.confirm(`Odebrat tržby filmu „${movie.movie_title}“?`)) {
         return;
       }
     }
@@ -161,18 +305,18 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
 
   return (
     <section className="admin-page">
-      <h2>Guessing contests</h2>
+      <h2>Tipovačky</h2>
 
       <p>
         <button type="button" className="primary" onClick={() => setFormOpen((open) => !open)}>
-          {formOpen ? "Close form" : "New contest"}
+          {formOpen ? "Zavřít formulář" : "Nová tipovačka"}
         </button>
       </p>
 
       {formOpen ? (
         <form className="contest-form" onSubmit={handleSubmit}>
           <div className="form-field">
-            <label htmlFor="contest-title">Title</label>
+            <label htmlFor="contest-title">Název</label>
             <input
               id="contest-title"
               required
@@ -184,32 +328,32 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
             />
           </div>
           <div className="form-field">
-            <label htmlFor="contest-season-key">Season key (optional, derived from title)</label>
-            <input
-              id="contest-season-key"
-              value={form.season_key}
+            <label htmlFor="contest-type">Typ</label>
+            <select
+              id="contest-type"
+              value={form.type}
               onChange={(event) => {
-                const { value } = event.currentTarget;
-                setForm((current) => ({ ...current, season_key: value }));
+                const value = event.currentTarget.value as RoundType;
+                setForm((current) => ({ ...current, type: value }));
               }}
-            />
+            >
+              <option value="standard">Standardní</option>
+              <option value="bonus">Bonusová</option>
+            </select>
           </div>
           <div className="form-row">
             <div className="form-field">
-              <label htmlFor="contest-date-from">Start (date &amp; time)</label>
+              <label htmlFor="contest-date-from">Začátek (datum a čas)</label>
               <input
                 id="contest-date-from"
                 type="datetime-local"
                 required
                 value={form.date_from}
-                onChange={(event) => {
-                  const { value } = event.currentTarget;
-                  setForm((current) => ({ ...current, date_from: value }));
-                }}
+                onChange={(event) => applyDateFrom(event.currentTarget.value)}
               />
             </div>
             <div className="form-field">
-              <label htmlFor="contest-date-to">End (date &amp; time)</label>
+              <label htmlFor="contest-date-to">Konec (datum a čas)</label>
               <input
                 id="contest-date-to"
                 type="datetime-local"
@@ -223,7 +367,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
             </div>
           </div>
           <div className="form-field">
-            <label htmlFor="contest-description">Description (optional)</label>
+            <label htmlFor="contest-description">Popis (nepovinné)</label>
             <input
               id="contest-description"
               value={form.description}
@@ -234,12 +378,12 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
             />
           </div>
 
-          <h3>Movies</h3>
+          <h3>Filmy</h3>
           {movieRows.map((row, index) => (
             <fieldset className="movie-row" key={index}>
-              <legend>Movie {index + 1}</legend>
+              <legend>Film {index + 1}</legend>
               <div className="form-field">
-                <label>Title</label>
+                <label>Název</label>
                 <input
                   required
                   value={row.movie_title}
@@ -248,7 +392,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
               </div>
               <div className="form-row">
                 <div className="form-field">
-                  <label>IMDB link</label>
+                  <label>Odkaz IMDB</label>
                   <input
                     type="url"
                     placeholder="https://www.imdb.com/title/..."
@@ -257,7 +401,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   />
                 </div>
                 <div className="form-field">
-                  <label>CSFD link</label>
+                  <label>Odkaz ČSFD</label>
                   <input
                     type="url"
                     placeholder="https://www.csfd.cz/film/..."
@@ -266,7 +410,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   />
                 </div>
                 <div className="form-field">
-                  <label>Poster link</label>
+                  <label>Odkaz na plakát</label>
                   <input
                     type="url"
                     placeholder="https://..."
@@ -280,7 +424,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   type="button"
                   onClick={() => setMovieRows((current) => current.filter((_, i) => i !== index))}
                 >
-                  Remove movie
+                  Odebrat film
                 </button>
               ) : null}
             </fieldset>
@@ -288,39 +432,119 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
 
           <p>
             <button type="button" onClick={() => setMovieRows((current) => [...current, emptyMovieRow])}>
-              Add movie
+              Přidat film
             </button>
           </p>
 
           <div className="form-actions">
             <button type="submit" className="primary" disabled={busy}>
-              Create contest
+              Vytvořit tipovačku
             </button>
           </div>
         </form>
       ) : null}
 
       {rounds === null ? (
-        <p>Loading…</p>
+        <p>Načítání…</p>
       ) : rounds.length === 0 ? (
-        <p>No contests yet.</p>
+        <p>Zatím žádné tipovačky.</p>
       ) : (
-        rounds.map((round) => (
-          <section className="round-card" key={round.id}>
-            <h3>
-              {round.title}{" "}
-              <span className="round-dates">
-                ({formatDateTime(round.date_from, timezone)} –{" "}
-                {formatDateTime(round.date_to, timezone)}, key: {round.season_key})
-              </span>
-            </h3>
-            {round.description ? <p>{round.description}</p> : null}
+        rounds.map((round) => {
+          const isFinished = new Date(round.date_to).getTime() < Date.now();
+          const allResultsFilled =
+            round.movies.length > 0 && round.movies.every((movie) => movie.actual_revenue !== null);
+          const editing = dateEdits[round.id];
+          const evaluateReason = round.evaluated_date
+            ? "Již vyhodnoceno"
+            : !isFinished
+              ? "Tipovačka ještě neskončila"
+              : !allResultsFilled
+                ? "Nejprve vyplňte všechny tržby"
+                : "Vyhodnotit tipovačku";
+
+          return (
+            <section className="round-card" key={round.id}>
+              <h3>
+                {round.type === "bonus" ? "[Bonus] " : ""}
+                {round.title}{" "}
+                <span className="round-dates">
+                  ({formatDateTime(round.date_from, timezone)} –{" "}
+                  {formatDateTime(round.date_to, timezone)})
+                </span>
+              </h3>
+
+              {round.evaluated_date ? (
+                <p className="round-status evaluated">
+                  Vyhodnoceno {formatDateTime(round.evaluated_date, timezone)}
+                </p>
+              ) : null}
+
+              {round.description ? <p>{round.description}</p> : null}
+
+              <div className="round-actions">
+                {editing ? (
+                  <span className="date-edit">
+                    <input
+                      type="datetime-local"
+                      value={editing.from}
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        setDateEdits((current) => ({
+                          ...current,
+                          [round.id]: { ...current[round.id], from: value }
+                        }));
+                      }}
+                    />
+                    <input
+                      type="datetime-local"
+                      value={editing.to}
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        setDateEdits((current) => ({
+                          ...current,
+                          [round.id]: { ...current[round.id], to: value }
+                        }));
+                      }}
+                    />
+                    <button type="button" className="primary" disabled={busy} onClick={() => void saveDates(round)}>
+                      Uložit časy
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => cancelEditDates(round.id)}>
+                      Zrušit
+                    </button>
+                  </span>
+                ) : (
+                  <button type="button" disabled={busy} onClick={() => startEditDates(round)}>
+                    Upravit časy
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="primary"
+                  disabled={busy || !!round.evaluated_date || !isFinished || !allResultsFilled}
+                  title={evaluateReason}
+                  onClick={() => void handleEvaluate(round)}
+                >
+                  Vyhodnotit
+                </button>
+
+                <button
+                  type="button"
+                  disabled={busy || round.guess_count > 0}
+                  title={round.guess_count > 0 ? "Tipovačka už má tipy" : "Smazat tipovačku"}
+                  onClick={() => void handleDeleteContest(round)}
+                >
+                  Smazat
+                </button>
+              </div>
+
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Movie</th>
-                  <th>Links</th>
-                  <th>Box office result</th>
+                  <th>Film</th>
+                  <th>Odkazy</th>
+                  <th>Skutečné tržby</th>
                 </tr>
               </thead>
               <tbody>
@@ -340,7 +564,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                       ) : null}{" "}
                       {movie.poster_url ? (
                         <a href={movie.poster_url} target="_blank" rel="noreferrer">
-                          Poster
+                          Plakát
                         </a>
                       ) : null}
                     </td>
@@ -349,16 +573,20 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                         <input
                           type="number"
                           min={0}
-                          step={1}
-                          placeholder="—"
-                          value={revenueDrafts[movie.id] ?? movie.actual_revenue ?? ""}
+                          step={0.01}
+                          placeholder="miliony, např. 123,45"
+                          value={effectiveRevenue(movie)}
                           onChange={(event) => {
                             const { value } = event.currentTarget;
                             setRevenueDrafts((current) => ({ ...current, [movie.id]: value }));
                           }}
                         />
-                        <button type="button" disabled={busy} onClick={() => void handleSaveRevenue(movie)}>
-                          Save
+                        <button
+                          type="button"
+                          disabled={revenueAction(movie).disabled}
+                          onClick={() => void handleSaveRevenue(movie)}
+                        >
+                          {revenueAction(movie).label}
                         </button>
                       </div>
                     </td>
@@ -367,7 +595,8 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
               </tbody>
             </table>
           </section>
-        ))
+          );
+        })
       )}
     </section>
   );

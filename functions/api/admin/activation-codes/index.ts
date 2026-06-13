@@ -18,6 +18,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
         activation_codes.id,
         activation_codes.code,
         activation_codes.consumed_date,
+        activation_codes.reserved_date,
         activation_codes.user_id,
         users.nickname AS user_nickname,
         users.email AS user_email,
