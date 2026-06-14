@@ -59,6 +59,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
       date_from: round.date_from,
       date_to: round.date_to,
       description: round.description,
+      type: round.type,
       movies: (moviesByRound.get(round.id) || []).map((movie) => ({
         id: movie.id,
         movie_title: movie.movie_title,

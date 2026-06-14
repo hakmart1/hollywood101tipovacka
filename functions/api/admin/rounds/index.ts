@@ -21,10 +21,11 @@ function normalizeUrl(value: unknown): string | null {
   if (!url) {
     return null;
   }
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    return null;
+  if (url.startsWith("data:image/") || url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
   }
-  return url;
+  // Don't force the user to type a scheme — assume https.
+  return `https://${url}`;
 }
 
 export async function onRequestGet(context: PagesContext): Promise<Response> {
@@ -42,9 +43,10 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
         rounds.description,
         rounds.type,
         rounds.evaluated_date,
+        rounds.scheduled_evaluation_date,
         (SELECT COUNT(*) FROM guesses WHERE guesses.round_id = rounds.id) AS guess_count
       FROM rounds
-      ORDER BY rounds.date_from DESC, rounds.id DESC`
+      ORDER BY rounds.date_to DESC, rounds.id DESC`
   ).all<AdminRoundRecord>();
 
   const movies = await context.env.DB.prepare(

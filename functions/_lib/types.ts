@@ -1,4 +1,4 @@
-export type UserStatus = "pending_activation" | "active" | "suspended" | "deactivated";
+export type UserStatus = "pending_activation" | "active" | "suspended" | "deactivated" | "deleted";
 export type UserRole = "player" | "admin";
 
 export interface Env {
@@ -90,9 +90,11 @@ export interface RoundRecord {
 export interface AdminRoundRecord extends RoundRecord {
   guess_count: number;
   evaluated_date: string | null;
+  scheduled_evaluation_date: string | null;
 }
 
 export interface UpdateRoundRequestBody {
+  title?: string;
   date_from?: string;
   date_to?: string;
 }

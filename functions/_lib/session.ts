@@ -33,5 +33,9 @@ export async function getSessionUser(
       WHERE id = ?1`
   ).bind(session.userId).first<SessionUserRecord>();
 
-  return user ?? null;
+  if (!user || user.status === "deleted") {
+    return null;
+  }
+
+  return user;
 }

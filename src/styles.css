@@ -70,13 +70,14 @@ body {
   padding: 0.05rem 0.45rem;
 }
 
-button.ghost {
+/* Ghost buttons in the dark header (light text on the dark bar). */
+.auth button.ghost {
   background: transparent;
   border-color: #4a4b55;
   color: #f4f4f5;
 }
 
-button.ghost:hover {
+.auth button.ghost:hover {
   background: #26272f;
 }
 
@@ -95,6 +96,55 @@ button.ghost:hover {
   color: #444;
   font-size: 0.92rem;
   border-bottom: 2px solid transparent;
+}
+
+.app-nav-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.nav-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-alert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.nav-avatar {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #17181f;
+  color: #f6c945;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.nav-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .app-nav a:hover {
@@ -164,6 +214,26 @@ button.ghost:hover {
   padding: 1.5rem 1.25rem 3rem;
 }
 
+.app-footer {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+  border-top: 1px solid #e4e6eb;
+  text-align: center;
+  color: #8b909a;
+  font-size: 0.82rem;
+}
+
+.footer-disclaimer {
+  margin: 0 0 0.4rem;
+  max-width: 38rem;
+  margin-inline: auto;
+}
+
+.footer-copyright {
+  margin: 0;
+}
+
 button {
   font: inherit;
   padding: 0.4rem 0.85rem;
@@ -180,14 +250,86 @@ button:hover {
   border-color: #b3bac4;
 }
 
+/* Ghost on light backgrounds (profile cards etc.) — readable, subtle. */
+button.ghost {
+  background: transparent;
+  border-color: #d3cdbd;
+  color: #6a5f47;
+}
+
+button.ghost:hover {
+  background: #f4efe4;
+  border-color: #c2b89f;
+}
+
+/* Primary CTA — warm gold to fit the theme (no blue). */
 button.primary {
-  background: #2f6fdb;
-  border-color: #2f6fdb;
-  color: #fff;
+  background: #e3a418;
+  border-color: #c8900f;
+  color: #2e2205;
 }
 
 button.primary:hover {
-  background: #245cba;
+  background: #d0950f;
+  border-color: #b8830c;
+}
+
+button.ghost.danger {
+  color: #c0392b;
+  border-color: #e6b3ad;
+}
+
+button.ghost.danger:hover {
+  background: #fdecea;
+  border-color: #d98b82;
+}
+
+button.primary.danger {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+
+button.primary.danger:hover {
+  background: #a93226;
+}
+
+.danger-zone,
+.activate-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.activate-card {
+  background: #fff8e1;
+  border-color: #f0d488;
+}
+
+.user-card h2.activate-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: #8a6608;
+}
+
+.activate-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.user-card h2.danger-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: #c0392b;
+}
+
+.danger-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #6b7280;
 }
 
 dialog.modal {
@@ -248,6 +390,81 @@ dialog.modal h2 {
 button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.code-requests {
+  background: #fff8e1;
+  border: 1px solid #f0d488;
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.code-requests h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-requests-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #e0a800;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.code-requests ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+  color: #4a4a4a;
+}
+
+.code-requests li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.code-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid #cbd0d8;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: #f1f2f5;
+  color: #17181f;
+}
+
+.icon-btn.danger:hover {
+  background: #fdecea;
+  border-color: #e6b3ad;
+  color: #c0392b;
 }
 
 .admin-nav {
@@ -331,30 +548,130 @@ button:disabled {
 }
 
 /* Gold-underlined section titles across the pages. */
-.home-results > h2,
+.home-contests h2,
+.home-results h2,
 .rules-page h2,
 .coin-history h2,
 .admin-page > h2,
-.archive-page > h2 {
+.archive-page > h2,
+.leaderboard-page h2 {
   color: #17181f;
   border-bottom: 2px solid #f0c419;
   padding-bottom: 0.3rem;
   display: inline-block;
 }
 
-.user-card dl {
-  display: grid;
-  grid-template-columns: max-content auto;
-  gap: 0.25rem 1rem;
-  margin: 0 0 1rem;
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.1rem;
 }
 
-.user-card dt {
+.account-avatar {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: #17181f;
+  color: #f6c945;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-avatar-hint {
+  font-size: 0.8rem;
+  color: #b8860b;
+  text-decoration: none;
+  margin-top: 0.15rem;
+}
+
+.account-avatar-hint:hover {
+  text-decoration: underline;
+}
+
+.account-identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.account-actions {
+  margin-left: auto;
+  align-self: flex-start;
+  display: flex;
+  gap: 0.5rem;
+}
+
+
+.account-nickname {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #17181f;
+}
+
+.account-email {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.balance-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff7e0 0%, #ffe9ad 100%);
+  border: 1px solid #f0d488;
+}
+
+.balance-coin {
+  flex: none;
+}
+
+.balance-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.balance-label {
+  font-size: 0.8rem;
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a6608;
 }
 
-.user-card dd {
+.balance-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #17181f;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.balance-hint {
   margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
 }
 
 .contest-form {
@@ -394,6 +711,45 @@ button:disabled {
   color: #17181f;
 }
 
+.round-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.round-toggle-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #17181f;
+}
+
+.round-pending {
+  color: #e0a800;
+  font-size: 0.7rem;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+}
+
+.round-pending.scheduled {
+  color: #1a7f37;
+}
+
+.round-toggle-meta {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.round-body {
+  margin-top: 0.85rem;
+}
+
 .round-dates {
   font-weight: 400;
   font-size: 0.85rem;
@@ -425,6 +781,15 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.schedule-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #8a6608;
+}
+
 .date-edit input {
   padding: 0.25rem 0.4rem;
   border: 1px solid #bbb;
@@ -432,17 +797,105 @@ button:disabled {
   font: inherit;
 }
 
-.revenue-edit {
+.date-edit .round-title-edit {
+  min-width: 14rem;
+}
+
+.movie-links-admin {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.movie-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 22rem;
+}
+
+.movie-edit input {
+  padding: 0.3rem 0.45rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.movie-edit-actions {
   display: flex;
   gap: 0.4rem;
 }
 
-.revenue-edit input {
+.revenue-input {
   width: 9rem;
   padding: 0.25rem 0.4rem;
   border: 1px solid #bbb;
   border-radius: 4px;
   font: inherit;
+}
+
+.movie-poster {
+  width: 54px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+/* Tiny inline thumbnail for the admin links cell — fits on one row. */
+.movie-poster-mini {
+  width: 22px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+
+/* Poster + title together in result tables / headings. */
+.movie-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.movie-result-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.movie-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.logo-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.logo-badge.imdb {
+  background: #f5c518;
+  color: #000;
+}
+
+.logo-badge.csfd {
+  background: #ba0305;
+  color: #fff;
+}
+
+.movie-poster-empty {
+  background: #eef0f4;
+  border: 1px dashed #d4d8e0;
 }
 
 .guess-edit {
@@ -481,9 +934,35 @@ button:disabled {
   margin-top: 2rem;
 }
 
+.home-contests h2,
 .home-results h2 {
   font-size: 1.1rem;
-  margin: 1.5rem 0 0.75rem;
+  margin: 0 0 0.75rem;
+}
+
+.home-tables {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.home-table-col {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+/* Film name gets the space; box-office values are bounded (max 9999,9 M). */
+.films-table {
+  table-layout: fixed;
+}
+
+.films-table th.num-col {
+  width: 5.5rem;
+}
+
+.films-table td {
+  overflow-wrap: anywhere;
 }
 
 .home-results h4 {
@@ -506,11 +985,57 @@ button:disabled {
   font-size: 0.85em;
 }
 
+/* Subtle highlight of the logged-in player's own row. */
+.data-table tbody tr.is-me {
+  background: #faf7ea;
+}
+
+.data-table tbody tr.is-me td:first-child {
+  box-shadow: inset 2px 0 0 #f0c419;
+}
+
+.section-sub {
+  margin: -0.4rem 0 0.6rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.card-caption {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.pager-info {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.more-link {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.more-link a {
+  color: #2f6fdb;
+  text-decoration: none;
+}
+
+.more-link a:hover {
+  text-decoration: underline;
+}
+
 .archive-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-width: 44rem;
 }
 
 .archive-list li {
@@ -591,6 +1116,27 @@ button:disabled {
   margin: 0 0 0.75rem;
 }
 
+/* Fixed column widths so they don't jump between pages. */
+.coin-history .data-table {
+  table-layout: fixed;
+}
+
+.coin-history .data-table th:nth-child(1) {
+  width: 30%;
+}
+
+.coin-history .data-table th:nth-child(2) {
+  width: 22%;
+}
+
+.coin-history .data-table th:nth-child(3) {
+  width: 48%;
+}
+
+.coin-history .data-table td {
+  overflow-wrap: anywhere;
+}
+
 .amount-plus {
   color: #1a7f37;
 }
@@ -616,4 +1162,37 @@ button:disabled {
 .rank-new {
   color: #2f6fdb;
   font-size: 0.8rem;
+}
+
+.player-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.player-avatar {
+  position: relative;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #17181f;
+  color: #f6c945;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-avatar-fallback {
+  font-size: 0.78rem;
+  font-weight: 700;
 }

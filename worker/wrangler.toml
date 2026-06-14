@@ -1,0 +1,16 @@
+# Standalone cron Worker that auto-evaluates rounds at their scheduled time.
+# Deployed separately from the Pages app (its own `wrangler deploy`), but bound
+# to the SAME D1 database, and it reuses the Pages app's evaluation logic.
+#
+#   npx wrangler deploy --config worker/wrangler.toml
+name = "hollywood101-cron"
+main = "src/index.ts"
+compatibility_date = "2026-06-02"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hollywood101tipovacka"
+database_id = "3ae4f86e-9388-4224-8df6-54c6dc12399b"
+
+[triggers]
+crons = ["*/5 * * * *"]

@@ -17,6 +17,7 @@ interface Contest {
   date_from: string;
   date_to: string;
   description: string | null;
+  type: "standard" | "bonus";
   movies: ContestMovie[];
 }
 
@@ -34,10 +35,15 @@ interface HomeContestsProps {
 
 const GUESS_COST = 100_000;
 
+function isLinkablePoster(url: string): boolean {
+  // data: URIs are the image itself — opening them in a new tab is pointless.
+  return !url.startsWith("data:");
+}
+
 function formatMillions(revenue: number): string {
-  return `${(revenue / 1_000_000).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  return `${(revenue / 1_000_000).toLocaleString("cs-CZ", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
   })} M`;
 }
 
@@ -70,7 +76,11 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
     const draft = (drafts[movie.id] ?? "").trim();
     const millions = Number(draft);
     if (draft === "" || !Number.isFinite(millions) || millions < 0) {
-      onMessage("Enter your guess in millions, e.g. 123.45.");
+      onMessage("Zadejte tip v milionech, např. 10,1.");
+      return;
+    }
+    if (millions > 9999.9) {
+      onMessage("Tip může být nejvýše 9999,9 M.");
       return;
     }
 
@@ -123,8 +133,9 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
         <input
           type="number"
           min={0}
-          step={0.01}
-          placeholder="miliony, např. 123,45"
+          max={9999.9}
+          step={0.1}
+          placeholder="miliony, např. 10,1"
           value={drafts[movie.id] ?? ""}
           onChange={(event) => {
             const { value } = event.currentTarget;
@@ -132,7 +143,7 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
           }}
         />
         <button type="button" className="primary" disabled={busy} onClick={() => void placeGuess(movie)}>
-          Tipnout ({GUESS_COST.toLocaleString("en-US")} mincí)
+          Tipnout ({GUESS_COST.toLocaleString("en-US")} Imfcoinů)
         </button>
       </div>
     );
@@ -143,7 +154,12 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
   }
 
   if (contests.length === 0) {
-    return <p className="no-contest">Žádná aktivní tipovačka.</p>;
+    return (
+      <section className="home-contests">
+        <h2>Aktivní tipovačky</h2>
+        <p className="no-contest">Žádná aktivní tipovačka.</p>
+      </section>
+    );
   }
 
   const nowMs = Date.now();
@@ -157,51 +173,80 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
   });
 
   return (
-    <>
+    <section className="home-contests">
+      <h2>Aktivní tipovačky</h2>
       {sorted.map((contest) => {
         const closed = new Date(contest.date_to).getTime() < nowMs;
         return (
         <section className="round-card" key={contest.id}>
-          <h2>{contest.title}</h2>
+          <h3>{contest.title}</h3>
           <p className="round-dates">
             {closed
               ? `Tipování uzavřeno (${formatDateTime(contest.date_to)}) – čeká na vyhodnocení`
-              : `Otevřeno do ${formatDateTime(contest.date_to)}`}
+              : `Otevřeno do ${formatDateTime(contest.date_to)}${
+                  contest.type === "standard" ? " – Tržby za otvírací víkend" : ""
+                }`}
           </p>
           {contest.description ? <p>{contest.description}</p> : null}
-          {!closed ? (
-            <p className="guess-caption">
-              Tipněte celkové tržby každého filmu. Každý tip stojí{" "}
-              {GUESS_COST.toLocaleString("en-US")} mincí a je konečný.
-            </p>
-          ) : null}
           <table className="data-table">
             <thead>
               <tr>
+                <th>Plakát</th>
                 <th>Film</th>
-                <th>Odkazy</th>
                 <th>Váš tip (tržby)</th>
               </tr>
             </thead>
             <tbody>
               {contest.movies.map((movie) => (
                 <tr key={movie.id}>
-                  <td>{movie.movie_title}</td>
                   <td>
-                    {movie.imdb_url ? (
-                      <a href={movie.imdb_url} target="_blank" rel="noreferrer">
-                        IMDB
-                      </a>
-                    ) : null}{" "}
-                    {movie.csfd_url ? (
-                      <a href={movie.csfd_url} target="_blank" rel="noreferrer">
-                        CSFD
-                      </a>
-                    ) : null}{" "}
                     {movie.poster_url ? (
-                      <a href={movie.poster_url} target="_blank" rel="noreferrer">
-                        Plakát
-                      </a>
+                      isLinkablePoster(movie.poster_url) ? (
+                        <a href={movie.poster_url} target="_blank" rel="noreferrer">
+                          <img
+                            className="movie-poster"
+                            src={movie.poster_url}
+                            alt={movie.movie_title}
+                            loading="lazy"
+                          />
+                        </a>
+                      ) : (
+                        <img
+                          className="movie-poster"
+                          src={movie.poster_url}
+                          alt={movie.movie_title}
+                          loading="lazy"
+                        />
+                      )
+                    ) : (
+                      <span className="movie-poster movie-poster-empty" aria-hidden="true" />
+                    )}
+                  </td>
+                  <td>
+                    {movie.movie_title}
+                    {movie.imdb_url || movie.csfd_url ? (
+                      <span className="movie-links">
+                        {movie.imdb_url ? (
+                          <a
+                            href={movie.imdb_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="logo-badge imdb"
+                          >
+                            IMDb
+                          </a>
+                        ) : null}
+                        {movie.csfd_url ? (
+                          <a
+                            href={movie.csfd_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="logo-badge csfd"
+                          >
+                            ČSFD
+                          </a>
+                        ) : null}
+                      </span>
                     ) : null}
                   </td>
                   <td>{renderGuessCell(movie, closed)}</td>
@@ -212,6 +257,6 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
         </section>
         );
       })}
-    </>
+    </section>
   );
 }

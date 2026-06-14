@@ -24,9 +24,10 @@ interface DetailResponse {
 
 interface ResultsArchivePageProps {
   onMessage: (message: string) => void;
+  highlightNickname: string | null;
 }
 
-export default function ResultsArchivePage({ onMessage }: ResultsArchivePageProps) {
+export default function ResultsArchivePage({ onMessage, highlightNickname }: ResultsArchivePageProps) {
   const [rounds, setRounds] = useState<HistoryRound[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [detail, setDetail] = useState<RoundResult | null>(null);
@@ -97,7 +98,7 @@ export default function ResultsArchivePage({ onMessage }: ResultsArchivePageProp
               </button>
               {openId === round.id ? (
                 detail && detail.id === round.id ? (
-                  <RoundResultView result={detail} />
+                  <RoundResultView result={detail} highlightNickname={highlightNickname} />
                 ) : (
                   <p className="guess-hint">Načítání…</p>
                 )

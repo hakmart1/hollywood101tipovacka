@@ -6,8 +6,8 @@ export default function RulesPage() {
       <h3>Jak hrát tipovačku</h3>
       <ul>
         <li>Když je tipovačka otevřená, tipujete celkové tržby každého filmu.</li>
-        <li>Tipy se zadávají v milionech na 2 desetinná místa (např. 123,45 = 123 450 000 $).</li>
-        <li>Každý tip stojí <strong>100 000</strong> IMF coinů a je konečný.</li>
+        <li>Tipy se zadávají v milionech na 1 desetinné místo (např. 123,4 = 123 400 000 $).</li>
+        <li>Každý tip stojí <strong>100 000</strong> Imfcoinů a je konečný.</li>
         <li>
           Po skončení tipovačky a zadání skutečných tržeb se tipovačka vyhodnotí a vyplatí se
           odměny.
@@ -18,14 +18,14 @@ export default function RulesPage() {
       <ul>
         <li>
           Pokud je váš tip do <strong>±25 %</strong> od skutečného výsledku, získáte zpět váš vklad{" "}
-          <strong>100 000</strong> IMF coinů.
+          <strong>100 000</strong> Imfcoinů.
         </li>
         <li>
-          Navíc bonus za přesnost až <strong>100 000</strong> IMF coinů podle toho, jak blízko jste
+          Navíc bonus za přesnost až <strong>100 000</strong> Imfcoinů podle toho, jak blízko jste
           byli: dokonalý tip získá plnou částku a na hranici 25 % klesá k nule.
         </li>
         <li>
-          Tip v rozmezí tedy vynese <strong>100 000</strong> až <strong>200 000</strong> IMF coinů. Tipy
+          Tip v rozmezí tedy vynese <strong>100 000</strong> až <strong>200 000</strong> Imfcoinů. Tipy
           mimo ±25 % nezískají nic.
         </li>
       </ul>
@@ -56,12 +56,12 @@ export default function RulesPage() {
         <li>Ostatní v nejlepších 20 % způsobilých hráčů: <strong>+50 000</strong></li>
       </ul>
 
-      <h3>IMF coiny a záchranné balíčky</h3>
+      <h3>Imfcoiny a záchranné balíčky</h3>
       <ul>
-        <li>Nově aktivované účty začínají s <strong>2 000 000</strong> IMF coiny.</li>
+        <li>Nově aktivované účty začínají s <strong>2 000 000</strong> Imfcoiny.</li>
         <li>
           Pokud váš zůstatek klesne na <strong>200 000</strong> nebo níže, můžete požádat o záchranný
-          balíček IMF ve výši <strong>500 000</strong> mincí — jednou za 14 dní.
+          balíček ve výši <strong>500 000</strong> Imfcoinů — jednou za 14 dní.
         </li>
       </ul>
     </section>

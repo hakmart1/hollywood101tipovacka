@@ -13,6 +13,7 @@ export interface ResultRoundInput {
 interface ResultMovieRow {
   id: number;
   movie_title: string;
+  poster_url: string | null;
   actual_revenue: number;
 }
 
@@ -27,7 +28,7 @@ interface ResultGuessRow {
 // the player standings, using the same scoring the evaluation paid out with.
 export async function buildRoundResult(env: Env, round: ResultRoundInput) {
   const movies = await env.DB.prepare(
-    "SELECT id, movie_title, actual_revenue FROM movies WHERE round_id = ?1 ORDER BY id"
+    "SELECT id, movie_title, poster_url, actual_revenue FROM movies WHERE round_id = ?1 ORDER BY id"
   ).bind(round.id).all<ResultMovieRow>();
 
   const guesses = await env.DB.prepare(
@@ -59,6 +60,7 @@ export async function buildRoundResult(env: Env, round: ResultRoundInput) {
     movies: movies.results.map((movie) => ({
       id: movie.id,
       movie_title: movie.movie_title,
+      poster_url: movie.poster_url,
       actual_revenue: movie.actual_revenue,
       standings: (movieStandings.get(movie.id) || []).map((entry) => ({
         rank: entry.rank,

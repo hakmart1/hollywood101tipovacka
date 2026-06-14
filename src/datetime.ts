@@ -10,10 +10,19 @@ export function formatDateTime(value: string | null, timeZone?: string | null): 
     return value;
   }
 
+  // Show date and time down to the minute — never seconds.
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  };
+
   try {
-    return date.toLocaleString(undefined, timeZone ? { timeZone } : undefined);
+    return date.toLocaleString(undefined, timeZone ? { ...options, timeZone } : options);
   } catch {
-    return date.toLocaleString();
+    return date.toLocaleString(undefined, options);
   }
 }
 
@@ -135,6 +144,61 @@ export function utcToZonedInput(iso: string | null, timeZone?: string | null): s
       date.getHours()
     )}:${pad(date.getMinutes())}`;
   }
+}
+
+// The upcoming Monday as a datetime-local input value ("YYYY-MM-DDT00:00"),
+// expressed as a calendar date in the given time zone (today if it's Monday).
+export function nextMondayInput(timeZone?: string | null): string {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: timeZone || undefined,
+      weekday: "short",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    })
+      .formatToParts(new Date())
+      .map((part) => [part.type, part.value])
+  );
+
+  const weekdays: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6
+  };
+  const dayOfWeek = weekdays[parts.weekday] ?? 1;
+  const daysUntilMonday = (8 - dayOfWeek) % 7;
+
+  const date = new Date(
+    Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day))
+  );
+  date.setUTCDate(date.getUTCDate() + daysUntilMonday);
+
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(
+    date.getUTCDate()
+  )}T00:00`;
+}
+
+// Shift a datetime-local input value ("YYYY-MM-DDTHH:MM") by a number of days,
+// keeping the time of day. Returns "" for an unparseable input.
+export function addDaysToInput(value: string, days: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) {
+    return "";
+  }
+  const [, year, month, day, hour, minute] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  date.setUTCDate(date.getUTCDate() + days);
+
+  const pad = (input: number) => String(input).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(
+    date.getUTCDate()
+  )}T${hour}:${minute}`;
 }
 
 export function browserTimeZone(): string {

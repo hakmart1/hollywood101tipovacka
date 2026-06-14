@@ -33,10 +33,13 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   const millions = Number(payload.guessed_millions);
   if (!Number.isFinite(millions) || millions < 0) {
-    return json({ error: "Enter your guess in millions, e.g. 123.45." });
+    return json({ error: "Zadejte tip v milionech, např. 10,1." });
   }
-  // Guesses are entered in millions with 2 decimal places (0.01M = 10,000).
-  const guessedRevenue = Math.round(millions * 100) * 10_000;
+  if (millions > 9999.9) {
+    return json({ error: "Tip může být nejvýše 9999,9 M." });
+  }
+  // Guesses are entered in millions with 1 decimal place (0.1M = 100,000).
+  const guessedRevenue = Math.round(millions * 10) * 100_000;
 
   const movie = await context.env.DB.prepare(
     `SELECT
@@ -93,6 +96,6 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   return json({
     error: null,
-    message: `Guess placed for ${movie.movie_title}. ${GUESS_COST.toLocaleString("en-US")} coins were spent.`
+    message: `Guess placed for ${movie.movie_title}. ${GUESS_COST.toLocaleString("en-US")} Imfcoins were spent.`
   });
 }

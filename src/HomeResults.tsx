@@ -1,27 +1,9 @@
 import { useEffect, useState } from "react";
-import RoundResultView, { formatCoins } from "./RoundResultView";
+import Leaderboard from "./Leaderboard";
+import type { LeaderboardEntry } from "./Leaderboard";
+import { formatMillions, MovieNameCell } from "./RoundResultView";
 import type { RoundResult } from "./RoundResultView";
-
-interface LeaderboardEntry {
-  nickname: string;
-  rank: number;
-  previous_rank: number | null;
-  rank_balance: number | null;
-}
-
-function renderChange(previousRank: number | null, currentRank: number) {
-  if (previousRank === null) {
-    return <span className="rank-new">nový</span>;
-  }
-  const delta = previousRank - currentRank;
-  if (delta > 0) {
-    return <span className="rank-up">▲ {delta}</span>;
-  }
-  if (delta < 0) {
-    return <span className="rank-down">▼ {-delta}</span>;
-  }
-  return <span className="rank-same">–</span>;
-}
+import { formatDateTime } from "./datetime";
 
 interface ResultsResponse {
   error: string | null;
@@ -31,11 +13,12 @@ interface ResultsResponse {
 
 interface HomeResultsProps {
   onMessage: (message: string) => void;
+  highlightNickname: string | null;
 }
 
-export default function HomeResults({ onMessage }: HomeResultsProps) {
-  const [results, setResults] = useState<RoundResult[] | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+export default function HomeResults({ onMessage, highlightNickname }: HomeResultsProps) {
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const [lastRound, setLastRound] = useState<RoundResult | null>(null);
 
   useEffect(() => {
     void load();
@@ -50,56 +33,81 @@ export default function HomeResults({ onMessage }: HomeResultsProps) {
 
     if (!response.ok || payload.error) {
       onMessage(payload.error || "Could not load results.");
-      setResults([]);
+      setLeaderboard([]);
       return;
     }
 
-    setResults(payload.results || []);
     setLeaderboard(payload.leaderboard || []);
+    setLastRound(payload.results && payload.results.length > 0 ? payload.results[0] : null);
   }
 
-  if (results === null) {
+  if (leaderboard === null) {
     return null;
   }
 
   return (
-    <div className="home-results">
-      {results.length > 0 ? (
-        <>
-          <h2>Nejnovější výsledky</h2>
-          {results.map((result) => (
-            <RoundResultView key={result.id} result={result} />
-          ))}
-        </>
+    <div className="home-results home-tables">
+      {lastRound ? (
+        <div className="home-table-col">
+          <h2>Filmy z poslední tipovačky</h2>
+          <div className="card">
+            <p className="card-caption">
+              {lastRound.title} · vyhodnoceno {formatDateTime(lastRound.evaluated_date)}
+            </p>
+            <table className="data-table films-table">
+              <thead>
+                <tr>
+                  <th>Film</th>
+                  <th className="num-col">Tržby</th>
+                  {highlightNickname ? <th className="num-col">Můj tip</th> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {lastRound.movies.map((movie) => {
+                  const mine = highlightNickname
+                    ? movie.standings.find((standing) => standing.nickname === highlightNickname)
+                    : undefined;
+                  return (
+                    <tr key={movie.id}>
+                      <td>
+                        <MovieNameCell posterUrl={movie.poster_url} title={movie.movie_title} />
+                      </td>
+                      <td>{formatMillions(movie.actual_revenue)}</td>
+                      {highlightNickname ? (
+                        <td>{mine ? formatMillions(mine.guess) : "—"}</td>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="more-link">
+            <a href="#/results">Více ve výsledcích →</a>
+          </p>
+        </div>
       ) : null}
 
-      <h2>Žebříček hráčů</h2>
-      {leaderboard.length === 0 ? (
-        <p className="guess-hint">Zatím žádní hráči.</p>
-      ) : (
-        <div className="card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Změna</th>
-                <th>Hráč</th>
-                <th>IMF mince</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry) => (
-                <tr key={entry.nickname}>
-                  <td>{entry.rank}</td>
-                  <td>{renderChange(entry.previous_rank, entry.rank)}</td>
-                  <td>{entry.nickname}</td>
-                  <td>{formatCoins(entry.rank_balance ?? 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="home-table-col">
+        <h2>Žebříček hráčů</h2>
+        {leaderboard.length === 0 ? (
+          <p className="guess-hint">Zatím žádní hráči.</p>
+        ) : (
+          <>
+            <div className="card">
+              <Leaderboard
+                entries={leaderboard}
+                highlightNickname={highlightNickname}
+                limit={10}
+                showCoins={false}
+              />
+            </div>
+            <p className="more-link">
+              <a href="#/poradi">Celý žebříček →</a>
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

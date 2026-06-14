@@ -15,7 +15,7 @@ const COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
   if (!user) {
-    return json({ error: "You must be logged in to ask for more coins." }, 401);
+    return json({ error: "You must be logged in to ask for more Imfcoins." }, 401);
   }
 
   if (user.status !== "active") {
@@ -23,7 +23,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   }
 
   if (user.imf_coins_balance > LOW_BALANCE_THRESHOLD) {
-    return json({ error: "You still have enough IMF coins." });
+    return json({ error: "You still have enough Imfcoins." });
   }
 
   if (user.last_coins_request_date) {
@@ -31,7 +31,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     if (elapsedMs < COOLDOWN_MS) {
       const daysLeft = Math.ceil((COOLDOWN_MS - elapsedMs) / (24 * 60 * 60 * 1000));
       return json({
-        error: `You can ask for more coins only once every 14 days. Try again in ${daysLeft} day(s).`
+        error: `You can ask for more Imfcoins only once every 14 days. Try again in ${daysLeft} day(s).`
       });
     }
   }
@@ -49,6 +49,6 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   return json({
     error: null,
-    message: `The IMF approved your bailout — ${GRANT_AMOUNT.toLocaleString("en-US")} coins were added to your account.`
+    message: `The IMF approved your bailout — ${GRANT_AMOUNT.toLocaleString("en-US")} Imfcoins were added to your account.`
   });
 }

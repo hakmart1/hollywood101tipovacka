@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import AdminCodesPage from "./AdminCodesPage";
 import AdminContestsPage from "./AdminContestsPage";
 import HomeContests from "./HomeContests";
 import HomeResults from "./HomeResults";
+import LeaderboardPage from "./LeaderboardPage";
+import Modal from "./Modal";
 import ResultsArchivePage from "./ResultsArchivePage";
 import RulesPage from "./RulesPage";
+import TermsPage from "./TermsPage";
 import UserPage from "./UserPage";
 import { availableTimeZones, browserTimeZone, timeZoneLabel } from "./datetime";
+import { gravatarUrl } from "./gravatar";
 
-type UserStatus = "pending_activation" | "active" | "suspended" | "deactivated";
+type UserStatus = "pending_activation" | "active" | "suspended" | "deactivated" | "deleted";
 
 export interface User {
   id: number;
@@ -38,7 +42,15 @@ interface LogoutResponse extends ApiErrorResponse {
 
 type LoginState = "loading" | "not-logged" | "logged but unactive user" | "logged and active user";
 
-type Route = "home" | "user" | "rules" | "history" | "admin-codes" | "admin-contests";
+type Route =
+  | "home"
+  | "user"
+  | "rules"
+  | "terms"
+  | "history"
+  | "leaderboard"
+  | "admin-codes"
+  | "admin-contests";
 
 const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests"];
 
@@ -68,64 +80,16 @@ function readRoute(): Route {
   if (hash === "#/rules") {
     return "rules";
   }
+  if (hash === "#/podminky") {
+    return "terms";
+  }
   if (hash === "#/results") {
     return "history";
   }
-  return "home";
-}
-
-interface ModalProps {
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}
-
-function Modal({ title, onClose, children }: ModalProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const pressStartedOutside = useRef(false);
-
-  useEffect(() => {
-    dialogRef.current?.showModal();
-  }, []);
-
-  function isOutsideBox(clientX: number, clientY: number): boolean {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return false;
-    }
-    const rect = dialog.getBoundingClientRect();
-    return (
-      clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom
-    );
+  if (hash === "#/poradi") {
+    return "leaderboard";
   }
-
-  return (
-    <dialog
-      ref={dialogRef}
-      className="modal"
-      onCancel={onClose}
-      onMouseDown={(event) => {
-        pressStartedOutside.current =
-          event.target === dialogRef.current && isOutsideBox(event.clientX, event.clientY);
-      }}
-      onClick={(event) => {
-        // Backdrop clicks target the <dialog> element, but so do clicks on its
-        // padding, and a drag released outside reports the release position.
-        // Close only when the full click (press AND release) happened outside.
-        if (
-          pressStartedOutside.current &&
-          event.target === dialogRef.current &&
-          isOutsideBox(event.clientX, event.clientY)
-        ) {
-          onClose();
-        }
-        pressStartedOutside.current = false;
-      }}
-    >
-      <h2>{title}</h2>
-      {children}
-    </dialog>
-  );
+  return "home";
 }
 
 function BrandLogo({ className }: { className?: string }) {
@@ -147,6 +111,34 @@ function BrandLogo({ className }: { className?: string }) {
   );
 }
 
+function NavAvatar({ user }: { user: User }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    void gravatarUrl(user.email, 48).then((next) => {
+      if (!cancelled) {
+        setUrl(next);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user.email]);
+
+  return (
+    <span className="nav-avatar" aria-hidden="true">
+      {url && !failed ? (
+        <img src={url} alt="" onError={() => setFailed(true)} />
+      ) : (
+        user.nickname.slice(0, 1).toUpperCase()
+      )}
+    </span>
+  );
+}
+
 export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
   const [loginState, setLoginState] = useState<LoginState>("loading");
@@ -159,10 +151,34 @@ export default function App() {
   const [loginForm, setLoginForm] = useState(defaultLoginForm);
   const [activationCode, setActivationCode] = useState("");
   const [infoDialog, setInfoDialog] = useState<string | null>(null);
+  const [pendingRequests, setPendingRequests] = useState(0);
 
   useEffect(() => {
     void refreshSession();
   }, []);
+
+  // Count of users waiting for an activation code — drives the red badge next to
+  // "Administrace". Re-checked on navigation so it stays reasonably fresh.
+  useEffect(() => {
+    if (currentUser?.role !== "admin") {
+      setPendingRequests(0);
+      return;
+    }
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/code-requests", {
+          headers: { Accept: "application/json" }
+        });
+        if (!response.ok) {
+          return;
+        }
+        const payload = (await response.json()) as { requests?: unknown[] };
+        setPendingRequests(payload.requests?.length ?? 0);
+      } catch {
+        // ignore — the badge is best-effort
+      }
+    })();
+  }, [currentUser?.id, currentUser?.role, route]);
 
   useEffect(() => {
     const onHashChange = () => setRoute(readRoute());
@@ -349,6 +365,7 @@ export default function App() {
   }
 
   const isLogged = loginState === "logged but unactive user" || loginState === "logged and active user";
+  const currentYear = new Date().getFullYear();
 
   return (
     <>
@@ -371,48 +388,44 @@ export default function App() {
               </button>
             </>
           ) : null}
-
-          {isLogged && currentUser ? (
-            <>
-              {currentUser.status !== "active" ? (
-                <button type="button" className="ghost" onClick={() => setActivateOpen(true)}>
-                  Aktivovat
-                </button>
-              ) : null}
-              <span className="user-chip">
-                {currentUser.nickname}
-                {currentUser.status !== "active" ? (
-                  <span className="user-badge">neaktivní</span>
-                ) : null}
-              </span>
-              <button type="button" className="ghost" onClick={handleLogout}>
-                Odhlásit
-              </button>
-            </>
-          ) : null}
         </div>
       </header>
 
       <nav className="app-nav">
         <a href="#/" className={route === "home" ? "active" : ""}>
-          Domů
+          Hlavní stránka
         </a>
         <a href="#/results" className={route === "history" ? "active" : ""}>
           Výsledky
         </a>
+        <a href="#/poradi" className={route === "leaderboard" ? "active" : ""}>
+          Žebříček hráčů
+        </a>
         <a href="#/rules" className={route === "rules" ? "active" : ""}>
           Pravidla
         </a>
-        {isLogged ? (
-          <a href="#/user" className={route === "user" ? "active" : ""}>
-            Můj účet
-          </a>
-        ) : null}
-        {currentUser?.role === "admin" ? (
-          <a href="#/admin/contests" className={ADMIN_ROUTES.includes(route) ? "active" : ""}>
-            Administrace
-          </a>
-        ) : null}
+        <span className="app-nav-right">
+          {currentUser?.role === "admin" ? (
+            <a href="#/admin/contests" className={ADMIN_ROUTES.includes(route) ? "active" : ""}>
+              {pendingRequests > 0 ? (
+                <span
+                  className="nav-alert"
+                  title={`${pendingRequests} čekajících žádostí o kód`}
+                  aria-label={`${pendingRequests} čekajících žádostí o kód`}
+                >
+                  !
+                </span>
+              ) : null}
+              Administrace
+            </a>
+          ) : null}
+          {isLogged ? (
+            <a href="#/user" className={`nav-account ${route === "user" ? "active" : ""}`}>
+              Můj účet
+              {currentUser ? <NavAvatar user={currentUser} /> : null}
+            </a>
+          ) : null}
+        </span>
       </nav>
 
       <main className="app-main">
@@ -447,7 +460,11 @@ export default function App() {
               </a>
             </nav>
             {route === "admin-codes" ? (
-              <AdminCodesPage onMessage={setOutput} timezone={currentUser.timezone} />
+              <AdminCodesPage
+                onMessage={setOutput}
+                timezone={currentUser.timezone}
+                onPendingRequestsChange={setPendingRequests}
+              />
             ) : null}
             {route === "admin-contests" ? (
               <AdminContestsPage onMessage={setOutput} timezone={currentUser.timezone} />
@@ -456,7 +473,13 @@ export default function App() {
         ) : null}
 
         {route === "user" && currentUser ? (
-          <UserPage user={currentUser} onMessage={setOutput} onSessionRefresh={refreshSession} />
+          <UserPage
+            user={currentUser}
+            onMessage={setOutput}
+            onSessionRefresh={refreshSession}
+            onLogout={handleLogout}
+            onActivate={() => setActivateOpen(true)}
+          />
         ) : null}
 
         {route === "home" ? (
@@ -465,18 +488,41 @@ export default function App() {
               <BrandLogo className="hero-logo" />
               <div className="hero-text">
                 <h1>Hollywood 101 Tipovačka</h1>
-                <p>Tipni si víkendové tržby filmů, trefuj se co nejpřesněji a sbírej IMF coiny.</p>
+                <p>Tipni si víkendové tržby filmů, trefuj se co nejpřesněji a sbírej Imfcoiny.</p>
               </div>
             </section>
             <HomeContests user={currentUser} onMessage={setOutput} onSessionRefresh={refreshSession} />
-            <HomeResults onMessage={setOutput} />
+            <HomeResults onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
           </>
         ) : null}
 
         {route === "rules" ? <RulesPage /> : null}
 
-        {route === "history" ? <ResultsArchivePage onMessage={setOutput} /> : null}
+        {route === "terms" ? <TermsPage /> : null}
+
+        {route === "history" ? (
+          <ResultsArchivePage onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
+        ) : null}
+
+        {route === "leaderboard" ? (
+          <LeaderboardPage onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
+        ) : null}
       </main>
+
+      <footer className="app-footer">
+        <p className="footer-disclaimer">
+          Tato hra slouží čistě k zábavě. Nejsou v ní zahrnuty žádné skutečné peníze – Imfcoiny
+          nemají reálnou hodnotu a nelze je směnit ani vyplatit. Projekt není spojen s
+          IMDb, ČSFD ani filmovými studii.
+        </p>
+        <p className="footer-copyright">
+          © {currentYear} Hollywood 101 Tipovačka ·{" "}
+          <a href="https://hollywood101.substack.com" target="_blank" rel="noreferrer">
+            Substack
+          </a>{" "}
+          · <a href="#/podminky">Podmínky a ochrana údajů</a>
+        </p>
+      </footer>
 
       {signupOpen ? (
         <Modal title="Registrace" onClose={() => setSignupOpen(false)}>

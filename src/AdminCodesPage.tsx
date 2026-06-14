@@ -1,5 +1,45 @@
 import { useEffect, useState } from "react";
 import { formatDateTime } from "./datetime";
+import { useConfirm } from "./useConfirm";
+
+const iconProps = {
+  width: 16,
+  height: 16,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true
+};
+
+function CopyIcon() {
+  return (
+    <svg {...iconProps}>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg {...iconProps}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    </svg>
+  );
+}
 
 interface AdminCode {
   id: number;
@@ -12,15 +52,28 @@ interface AdminCode {
   user_status: string | null;
 }
 
+interface CodeRequest {
+  id: number;
+  nickname: string;
+  email: string | null;
+  last_code_request_date: string;
+}
+
 interface CodesResponse {
   error: string | null;
   codes?: AdminCode[];
   message?: string;
 }
 
+interface RequestsResponse {
+  error: string | null;
+  requests?: CodeRequest[];
+}
+
 interface AdminCodesPageProps {
   onMessage: (message: string) => void;
   timezone: string | null;
+  onPendingRequestsChange?: (count: number) => void;
 }
 
 function codeState(code: AdminCode): string {
@@ -36,15 +89,53 @@ function codeState(code: AdminCode): string {
   return "volný";
 }
 
-export default function AdminCodesPage({ onMessage, timezone }: AdminCodesPageProps) {
+export default function AdminCodesPage({
+  onMessage,
+  timezone,
+  onPendingRequestsChange
+}: AdminCodesPageProps) {
+  const { confirm, confirmElement } = useConfirm();
   const [codes, setCodes] = useState<AdminCode[] | null>(null);
+  const [requests, setRequests] = useState<CodeRequest[]>([]);
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
     void loadCodes();
+    void loadRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadRequests() {
+    const response = await fetch("/api/admin/code-requests", {
+      headers: { Accept: "application/json" }
+    });
+    const payload = (await response.json()) as RequestsResponse;
+    if (!response.ok || payload.error) {
+      return;
+    }
+    const list = payload.requests || [];
+    setRequests(list);
+    onPendingRequestsChange?.(list.length);
+  }
+
+  async function dismissRequest(request: CodeRequest) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/code-requests/${request.id}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" }
+      });
+      const payload = (await response.json()) as RequestsResponse;
+      if (payload.error) {
+        onMessage(payload.error);
+      } else {
+        await loadRequests();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function loadCodes() {
     const response = await fetch("/api/admin/activation-codes", {
@@ -114,11 +205,11 @@ export default function AdminCodesPage({ onMessage, timezone }: AdminCodesPagePr
 
   async function handleRemove(code: AdminCode) {
     const redeemed = code.consumed_date !== null;
-    const question = redeemed
+    const message = redeemed
       ? `Odebrat kód ${code.code}? Uživatel, který jej použil (${code.user_nickname}), bude deaktivován.`
       : `Odebrat kód ${code.code}?`;
 
-    if (!window.confirm(question)) {
+    if (!(await confirm({ title: "Odebrat kód", message, confirmLabel: "Odebrat", danger: true }))) {
       return;
     }
 
@@ -138,7 +229,34 @@ export default function AdminCodesPage({ onMessage, timezone }: AdminCodesPagePr
 
   return (
     <section className="admin-page">
-      <h2>Aktivační kódy</h2>
+      {requests.length > 0 ? (
+        <div className="code-requests">
+          <h3>
+            Čekající žádosti o kód <span className="code-requests-count">{requests.length}</span>
+          </h3>
+          <ul>
+            {requests.map((request) => (
+              <li key={request.id}>
+                <span className="code-request-info">
+                  <strong>{request.nickname}</strong>
+                  {request.email ? ` (${request.email})` : ""} ·{" "}
+                  {formatDateTime(request.last_code_request_date, timezone)}
+                </span>
+                <button
+                  type="button"
+                  className="icon-btn danger"
+                  title="Odebrat žádost"
+                  aria-label="Odebrat žádost"
+                  disabled={busy}
+                  onClick={() => void dismissRequest(request)}
+                >
+                  <TrashIcon />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <p>
         <button type="button" className="primary" disabled={busy} onClick={() => void handleGenerate()}>
@@ -168,27 +286,33 @@ export default function AdminCodesPage({ onMessage, timezone }: AdminCodesPagePr
                 <td className="code">{code.code}</td>
                 <td>{codeState(code)}</td>
                 <td>
-                  {code.user_nickname
-                    ? `${code.user_nickname} (${code.user_email}) — ${code.user_status}`
-                    : "—"}
+                  {code.user_nickname ? `${code.user_nickname} (${code.user_email})` : "—"}
                 </td>
                 <td>{formatDateTime(code.consumed_date, timezone)}</td>
                 <td>
-                  {!code.consumed_date ? (
-                    <>
-                      <button type="button" onClick={() => void handleCopy(code)}>
-                        {copiedId === code.id ? "Zkopírováno" : "Kopírovat"}
-                      </button>{" "}
-                      {!code.reserved_date ? (
-                        <button type="button" disabled={busy} onClick={() => void setReserved(code, true)}>
-                          Rezervovat
-                        </button>
-                      ) : null}{" "}
-                    </>
-                  ) : null}
-                  <button type="button" disabled={busy} onClick={() => void handleRemove(code)}>
-                    Odebrat
-                  </button>
+                  <div className="code-actions">
+                    {!code.consumed_date ? (
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title={copiedId === code.id ? "Zkopírováno" : "Kopírovat kód"}
+                        aria-label="Kopírovat kód"
+                        onClick={() => void handleCopy(code)}
+                      >
+                        {copiedId === code.id ? <CheckIcon /> : <CopyIcon />}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="icon-btn danger"
+                      title="Odebrat"
+                      aria-label="Odebrat"
+                      disabled={busy}
+                      onClick={() => void handleRemove(code)}
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -196,6 +320,7 @@ export default function AdminCodesPage({ onMessage, timezone }: AdminCodesPagePr
         </table>
         </div>
       )}
+      {confirmElement}
     </section>
   );
 }

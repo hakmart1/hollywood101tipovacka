@@ -25,15 +25,15 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     });
   }
 
-  // Codes are handed out by the admin; the request only records that this user
-  // is waiting for one. Later this will also send a reminder email to the admin.
+  // Codes are handed out by the admin; the request records that this user is
+  // waiting for one. The admin sees pending requests in the activation-codes
+  // admin page.
   await context.env.DB.prepare(
     "UPDATE users SET last_code_request_date = ?1 WHERE id = ?2"
   ).bind(new Date().toISOString(), user.id).run();
 
   return json({
     error: null,
-    message:
-      "Vaše žádost byla zaznamenána a administrátor bude upozorněn, aby vám poslal aktivační kód. Odesílání e-mailů zatím není zprovozněno."
+    message: "Vaše žádost byla zaznamenána. Administrátor vám brzy pošle aktivační kód."
   });
 }

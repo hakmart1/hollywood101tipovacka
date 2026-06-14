@@ -103,7 +103,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   return json({
     error: null,
     message: firstActivation
-      ? `Account activated. Welcome to the IMF — a signing bonus of ${ACTIVATION_BONUS.toLocaleString("en-US")} coins is yours.`
+      ? `Account activated. Welcome to the IMF — a signing bonus of ${ACTIVATION_BONUS.toLocaleString("en-US")} Imfcoins is yours.`
       : "Account activated."
   });
 }

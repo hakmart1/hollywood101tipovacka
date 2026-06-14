@@ -1,6 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { formatDateTime, utcToZonedInput, weekTitle, zonedToUtcIso } from "./datetime";
+import {
+  addDaysToInput,
+  formatDateTime,
+  nextMondayInput,
+  utcToZonedInput,
+  weekTitle,
+  zonedToUtcIso
+} from "./datetime";
+import { useConfirm } from "./useConfirm";
 
 interface RoundMovie {
   id: number;
@@ -22,6 +30,7 @@ interface Round {
   type: RoundType;
   guess_count: number;
   evaluated_date: string | null;
+  scheduled_evaluation_date: string | null;
   movies: RoundMovie[];
 }
 
@@ -59,13 +68,27 @@ const emptyForm = {
 };
 
 export default function AdminContestsPage({ onMessage, timezone }: AdminContestsPageProps) {
+  const { confirm, confirmElement } = useConfirm();
   const [rounds, setRounds] = useState<Round[] | null>(null);
+  // null = not yet seeded; once seeded, unevaluated rounds start expanded.
+  const [openIds, setOpenIds] = useState<Set<number> | null>(null);
+  // Round ids already shown — used to auto-expand newly appeared unevaluated ones.
+  const seenIds = useRef<Set<number>>(new Set());
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [movieRows, setMovieRows] = useState<MovieFormRow[]>([emptyMovieRow]);
-  const [revenueDrafts, setRevenueDrafts] = useState<Record<number, string>>({});
   const [autoTitle, setAutoTitle] = useState("");
-  const [dateEdits, setDateEdits] = useState<Record<number, { from: string; to: string }>>({});
+  const [dateEdits, setDateEdits] = useState<
+    Record<number, { title: string; from: string; to: string }>
+  >({});
+  const [movieEdits, setMovieEdits] = useState<
+    Record<
+      number,
+      { movie_title: string; imdb_url: string; csfd_url: string; poster_url: string; revenue: string }
+    >
+  >({});
+  // datetime-local draft per round while picking a scheduled-evaluation time.
+  const [scheduleEdits, setScheduleEdits] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
 
   // Prefill the title as "YYYY Week WW" from the start date, unless the admin
@@ -100,11 +123,32 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       return;
     }
 
-    setRounds(payload.rounds || []);
+    const list = payload.rounds || [];
+    setRounds(list);
+    // Unevaluated rounds start expanded so they stand out. On the first load that
+    // means all of them; on later loads only newly appeared ones (e.g. a just-
+    // created contest) — rounds the admin already collapsed stay collapsed.
+    setOpenIds((current) => {
+      const next = new Set(current ?? []);
+      for (const round of list) {
+        if (!round.evaluated_date && !seenIds.current.has(round.id)) {
+          next.add(round.id);
+        }
+      }
+      return next;
+    });
+    seenIds.current = new Set(list.map((round) => round.id));
   }
 
   async function handleDeleteContest(round: Round) {
-    if (!window.confirm(`Smazat tipovačku „${round.title}“?`)) {
+    if (
+      !(await confirm({
+        title: "Smazat tipovačku",
+        message: `Smazat tipovačku „${round.title}“?`,
+        confirmLabel: "Smazat",
+        danger: true
+      }))
+    ) {
       return;
     }
     setBusy(true);
@@ -127,6 +171,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     setDateEdits((current) => ({
       ...current,
       [round.id]: {
+        title: round.title,
         from: utcToZonedInput(round.date_from, timezone),
         to: utcToZonedInput(round.date_to, timezone)
       }
@@ -147,6 +192,10 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       onMessage("Both start and end date-times are required.");
       return;
     }
+    if (!edit.title.trim()) {
+      onMessage("Název tipovačky je povinný.");
+      return;
+    }
 
     setBusy(true);
     try {
@@ -157,6 +206,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
           Accept: "application/json"
         },
         body: JSON.stringify({
+          title: edit.title.trim(),
           date_from: zonedToUtcIso(edit.from, timezone),
           date_to: zonedToUtcIso(edit.to, timezone)
         })
@@ -173,7 +223,13 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   }
 
   async function handleEvaluate(round: Round) {
-    if (!window.confirm(`Vyhodnotit „${round.title}“? Tím se tipovačka uzavře.`)) {
+    if (
+      !(await confirm({
+        title: "Vyhodnotit tipovačku",
+        message: `Vyhodnotit „${round.title}“? Tím se tipovačka uzavře.`,
+        confirmLabel: "Vyhodnotit"
+      }))
+    ) {
       return;
     }
     setBusy(true);
@@ -181,6 +237,65 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       const response = await fetch(`/api/admin/rounds/${round.id}`, {
         method: "POST",
         headers: { Accept: "application/json" }
+      });
+      const payload = (await response.json()) as RoundsResponse;
+      onMessage(payload.error || payload.message || "Done.");
+      if (!payload.error) {
+        await loadRounds();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startSchedule(round: Round) {
+    setScheduleEdits((current) => ({
+      ...current,
+      [round.id]: round.scheduled_evaluation_date
+        ? utcToZonedInput(round.scheduled_evaluation_date, timezone)
+        : utcToZonedInput(new Date().toISOString(), timezone)
+    }));
+  }
+
+  function cancelScheduleEdit(roundId: number) {
+    setScheduleEdits((current) => {
+      const next = { ...current };
+      delete next[roundId];
+      return next;
+    });
+  }
+
+  async function saveSchedule(round: Round) {
+    const value = scheduleEdits[round.id];
+    if (!value) {
+      onMessage("Zadejte datum a čas vyhodnocení.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/rounds/${round.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ scheduled_evaluation_date: zonedToUtcIso(value, timezone) })
+      });
+      const payload = (await response.json()) as RoundsResponse;
+      onMessage(payload.error || payload.message || "Done.");
+      if (!payload.error) {
+        cancelScheduleEdit(round.id);
+        await loadRounds();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelSchedule(round: Round) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/rounds/${round.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ scheduled_evaluation_date: null })
       });
       const payload = (await response.json()) as RoundsResponse;
       onMessage(payload.error || payload.message || "Done.");
@@ -233,46 +348,85 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     }
   }
 
-  // Box office is entered in millions (2 decimals), like the players' guesses.
-  // Stored value is in full dollars, so show it divided by a million.
-  function effectiveRevenue(movie: RoundMovie): string {
-    const draft = revenueDrafts[movie.id];
-    if (draft !== undefined) {
-      return draft;
-    }
-    return movie.actual_revenue !== null ? String(movie.actual_revenue / 1_000_000) : "";
+  // Stored box office is in full dollars; show it in millions (1 decimal).
+  function formatRevenue(value: number | null): string {
+    return value !== null
+      ? `${(value / 1_000_000).toLocaleString("cs-CZ", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1
+        })} M`
+      : "—";
   }
 
-  // Button label/action reflects what saving will actually do.
-  function revenueAction(movie: RoundMovie): { label: string; disabled: boolean } {
-    const value = effectiveRevenue(movie).trim();
-    const hasResult = movie.actual_revenue !== null;
-    if (hasResult && value === "") {
-      return { label: "Odebrat", disabled: busy };
-    }
-    if (hasResult) {
-      return { label: "Upravit", disabled: busy };
-    }
-    return { label: "Uložit", disabled: busy || value === "" };
+  function startEditMovie(movie: RoundMovie) {
+    setMovieEdits((current) => ({
+      ...current,
+      [movie.id]: {
+        movie_title: movie.movie_title,
+        imdb_url: movie.imdb_url || "",
+        csfd_url: movie.csfd_url || "",
+        poster_url: movie.poster_url || "",
+        revenue: movie.actual_revenue !== null ? String(movie.actual_revenue / 1_000_000) : ""
+      }
+    }));
   }
 
-  async function handleSaveRevenue(movie: RoundMovie) {
-    const raw = effectiveRevenue(movie).trim();
+  function cancelEditMovie(movieId: number) {
+    setMovieEdits((current) => {
+      const next = { ...current };
+      delete next[movieId];
+      return next;
+    });
+  }
+
+  function updateMovieEdit(
+    movieId: number,
+    field: "movie_title" | "imdb_url" | "csfd_url" | "poster_url" | "revenue",
+    value: string
+  ) {
+    setMovieEdits((current) => ({
+      ...current,
+      [movieId]: { ...current[movieId], [field]: value }
+    }));
+  }
+
+  async function saveMovie(movie: RoundMovie) {
+    const edit = movieEdits[movie.id];
+    if (!edit) {
+      return;
+    }
+    if (!edit.movie_title.trim()) {
+      onMessage("Název filmu je povinný.");
+      return;
+    }
+
+    // Box office is entered in millions (1 decimal) and stored in full dollars,
+    // like the players' guesses. An empty field clears the result.
+    const raw = edit.revenue.trim();
     let revenue: number | null = null;
-
     if (raw !== "") {
       const millions = Number(raw);
       if (!Number.isFinite(millions) || millions < 0) {
-        onMessage("Tržby zadejte v milionech, např. 123,45.");
+        onMessage("Tržby zadejte v milionech, např. 10,1.");
         return;
       }
-      // Convert millions (2 decimals) to full dollars, like the guesses.
-      revenue = Math.round(millions * 100) * 10_000;
+      if (millions > 9999.9) {
+        onMessage("Tržby mohou být nejvýše 9999,9 M.");
+        return;
+      }
+      revenue = Math.round(millions * 10) * 100_000;
     }
 
     // Clearing an existing result is destructive — confirm it.
     if (revenue === null && movie.actual_revenue !== null) {
-      if (!window.confirm(`Odebrat tržby filmu „${movie.movie_title}“?`)) {
+      if (
+        !(await confirm({
+          title: "Odebrat tržby",
+          message: `Odebrat tržby filmu „${movie.movie_title}“?`,
+          confirmLabel: "Odebrat",
+          danger: true
+        }))
+      ) {
         return;
       }
     }
@@ -285,17 +439,18 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
           "Content-Type": "application/json",
           Accept: "application/json"
         },
-        body: JSON.stringify({ actual_revenue: revenue })
+        body: JSON.stringify({
+          movie_title: edit.movie_title,
+          imdb_url: edit.imdb_url,
+          csfd_url: edit.csfd_url,
+          poster_url: edit.poster_url,
+          actual_revenue: revenue
+        })
       });
       const payload = (await response.json()) as RoundsResponse;
       onMessage(payload.error || payload.message || "Done.");
-
       if (!payload.error) {
-        setRevenueDrafts((current) => {
-          const next = { ...current };
-          delete next[movie.id];
-          return next;
-        });
+        cancelEditMovie(movie.id);
         await loadRounds();
       }
     } finally {
@@ -303,12 +458,21 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     }
   }
 
+  function toggleForm() {
+    // Opening a fresh form: prefill the start with the upcoming Monday and the
+    // end two days later.
+    if (!formOpen) {
+      const start = nextMondayInput(timezone);
+      applyDateFrom(start);
+      setForm((current) => ({ ...current, date_to: addDaysToInput(start, 2) }));
+    }
+    setFormOpen((open) => !open);
+  }
+
   return (
     <section className="admin-page">
-      <h2>Tipovačky</h2>
-
       <p>
-        <button type="button" className="primary" onClick={() => setFormOpen((open) => !open)}>
+        <button type="button" className="primary" onClick={toggleForm}>
           {formOpen ? "Zavřít formulář" : "Nová tipovačka"}
         </button>
       </p>
@@ -394,8 +558,8 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                 <div className="form-field">
                   <label>Odkaz IMDB</label>
                   <input
-                    type="url"
-                    placeholder="https://www.imdb.com/title/..."
+                    type="text"
+                    placeholder="www.imdb.com/title/..."
                     value={row.imdb_url}
                     onChange={(event) => updateMovieRow(index, "imdb_url", event.currentTarget.value)}
                   />
@@ -403,8 +567,8 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                 <div className="form-field">
                   <label>Odkaz ČSFD</label>
                   <input
-                    type="url"
-                    placeholder="https://www.csfd.cz/film/..."
+                    type="text"
+                    placeholder="www.csfd.cz/film/..."
                     value={row.csfd_url}
                     onChange={(event) => updateMovieRow(index, "csfd_url", event.currentTarget.value)}
                   />
@@ -412,8 +576,8 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                 <div className="form-field">
                   <label>Odkaz na plakát</label>
                   <input
-                    type="url"
-                    placeholder="https://..."
+                    type="text"
+                    placeholder="https://... nebo data:image/..."
                     value={row.poster_url}
                     onChange={(event) => updateMovieRow(index, "poster_url", event.currentTarget.value)}
                   />
@@ -462,28 +626,70 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                 ? "Nejprve vyplňte všechny tržby"
                 : "Vyhodnotit tipovačku";
 
+          const open = openIds?.has(round.id) ?? false;
           return (
             <section className="round-card" key={round.id}>
-              <h3>
-                {round.type === "bonus" ? "[Bonus] " : ""}
-                {round.title}{" "}
-                <span className="round-dates">
-                  ({formatDateTime(round.date_from, timezone)} –{" "}
-                  {formatDateTime(round.date_to, timezone)})
+              <button
+                type="button"
+                className="round-toggle"
+                onClick={() =>
+                  setOpenIds((current) => {
+                    const next = new Set(current ?? []);
+                    if (next.has(round.id)) {
+                      next.delete(round.id);
+                    } else {
+                      next.add(round.id);
+                    }
+                    return next;
+                  })
+                }
+              >
+                <span className="round-toggle-title">
+                  {!round.evaluated_date ? (
+                    <span
+                      className={`round-pending${round.scheduled_evaluation_date ? " scheduled" : ""}`}
+                      title={round.scheduled_evaluation_date ? "Vyhodnocení naplánováno" : "Nevyhodnoceno"}
+                      aria-label={round.scheduled_evaluation_date ? "Vyhodnocení naplánováno" : "Nevyhodnoceno"}
+                    >
+                      ●
+                    </span>
+                  ) : null}
+                  {round.type === "bonus" ? "[Bonus] " : ""}
+                  {round.title}
                 </span>
-              </h3>
+                <span className="round-toggle-meta">
+                  {formatDateTime(round.date_from, timezone)} –{" "}
+                  {formatDateTime(round.date_to, timezone)}
+                  {round.evaluated_date
+                    ? ` · vyhodnoceno ${formatDateTime(round.evaluated_date, timezone)}`
+                    : round.scheduled_evaluation_date
+                      ? ` · ⏱ vyhodnocení ${formatDateTime(round.scheduled_evaluation_date, timezone)}`
+                      : ""}
+                </span>
+                <span className="archive-toggle">{open ? "▲" : "▼"}</span>
+              </button>
 
-              {round.evaluated_date ? (
-                <p className="round-status evaluated">
-                  Vyhodnoceno {formatDateTime(round.evaluated_date, timezone)}
-                </p>
-              ) : null}
-
+              {open ? (
+              <div className="round-body">
               {round.description ? <p>{round.description}</p> : null}
 
+              {!round.evaluated_date ? (
               <div className="round-actions">
                 {editing ? (
                   <span className="date-edit">
+                    <input
+                      type="text"
+                      className="round-title-edit"
+                      placeholder="Název tipovačky"
+                      value={editing.title}
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        setDateEdits((current) => ({
+                          ...current,
+                          [round.id]: { ...current[round.id], title: value }
+                        }));
+                      }}
+                    />
                     <input
                       type="datetime-local"
                       value={editing.from}
@@ -507,7 +713,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                       }}
                     />
                     <button type="button" className="primary" disabled={busy} onClick={() => void saveDates(round)}>
-                      Uložit časy
+                      Uložit
                     </button>
                     <button type="button" disabled={busy} onClick={() => cancelEditDates(round.id)}>
                       Zrušit
@@ -515,7 +721,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   </span>
                 ) : (
                   <button type="button" disabled={busy} onClick={() => startEditDates(round)}>
-                    Upravit časy
+                    Upravit
                   </button>
                 )}
 
@@ -529,6 +735,44 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   Vyhodnotit
                 </button>
 
+                {scheduleEdits[round.id] !== undefined ? (
+                  <span className="date-edit">
+                    <input
+                      type="datetime-local"
+                      value={scheduleEdits[round.id]}
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        setScheduleEdits((current) => ({ ...current, [round.id]: value }));
+                      }}
+                    />
+                    <button type="button" className="primary" disabled={busy} onClick={() => void saveSchedule(round)}>
+                      Uložit plán
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => cancelScheduleEdit(round.id)}>
+                      Zrušit
+                    </button>
+                  </span>
+                ) : round.scheduled_evaluation_date ? (
+                  <span className="schedule-info">
+                    Naplánováno: {formatDateTime(round.scheduled_evaluation_date, timezone)}
+                    <button type="button" disabled={busy} onClick={() => startSchedule(round)}>
+                      Změnit
+                    </button>
+                    <button type="button" disabled={busy} onClick={() => void cancelSchedule(round)}>
+                      Zrušit plán
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy || !!round.evaluated_date || !isFinished || !allResultsFilled}
+                    title={evaluateReason}
+                    onClick={() => startSchedule(round)}
+                  >
+                    Naplánovat
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={busy || round.guess_count > 0}
@@ -538,6 +782,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   Smazat
                 </button>
               </div>
+              ) : null}
 
             <table className="data-table">
               <thead>
@@ -545,59 +790,151 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                   <th>Film</th>
                   <th>Odkazy</th>
                   <th>Skutečné tržby</th>
+                  {!round.evaluated_date ? <th>Akce</th> : null}
                 </tr>
               </thead>
               <tbody>
-                {round.movies.map((movie) => (
+                {round.movies.map((movie) => {
+                  const editing = movieEdits[movie.id];
+                  return (
                   <tr key={movie.id}>
-                    <td>{movie.movie_title}</td>
                     <td>
-                      {movie.imdb_url ? (
-                        <a href={movie.imdb_url} target="_blank" rel="noreferrer">
-                          IMDB
-                        </a>
-                      ) : null}{" "}
-                      {movie.csfd_url ? (
-                        <a href={movie.csfd_url} target="_blank" rel="noreferrer">
-                          CSFD
-                        </a>
-                      ) : null}{" "}
-                      {movie.poster_url ? (
-                        <a href={movie.poster_url} target="_blank" rel="noreferrer">
-                          Plakát
-                        </a>
-                      ) : null}
+                      {editing ? (
+                        <input
+                          value={editing.movie_title}
+                          onChange={(event) =>
+                            updateMovieEdit(movie.id, "movie_title", event.currentTarget.value)
+                          }
+                        />
+                      ) : (
+                        movie.movie_title
+                      )}
                     </td>
                     <td>
-                      <div className="revenue-edit">
+                      {editing ? (
+                        <div className="movie-edit">
+                          <input
+                            type="text"
+                            placeholder="Odkaz IMDB"
+                            value={editing.imdb_url}
+                            onChange={(event) =>
+                              updateMovieEdit(movie.id, "imdb_url", event.currentTarget.value)
+                            }
+                          />
+                          <input
+                            type="text"
+                            placeholder="Odkaz ČSFD"
+                            value={editing.csfd_url}
+                            onChange={(event) =>
+                              updateMovieEdit(movie.id, "csfd_url", event.currentTarget.value)
+                            }
+                          />
+                          <input
+                            type="text"
+                            placeholder="Odkaz na plakát (URL nebo data:image/...)"
+                            value={editing.poster_url}
+                            onChange={(event) =>
+                              updateMovieEdit(movie.id, "poster_url", event.currentTarget.value)
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <div className="movie-links-admin">
+                          {movie.poster_url ? (
+                            movie.poster_url.startsWith("data:") ? (
+                              <img
+                                className="movie-poster-mini"
+                                src={movie.poster_url}
+                                alt={movie.movie_title}
+                                loading="lazy"
+                              />
+                            ) : (
+                              <a href={movie.poster_url} target="_blank" rel="noreferrer">
+                                <img
+                                  className="movie-poster-mini"
+                                  src={movie.poster_url}
+                                  alt={movie.movie_title}
+                                  loading="lazy"
+                                />
+                              </a>
+                            )
+                          ) : null}
+                          {movie.imdb_url ? (
+                            <a
+                              href={movie.imdb_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="logo-badge imdb"
+                            >
+                              IMDb
+                            </a>
+                          ) : null}
+                          {movie.csfd_url ? (
+                            <a
+                              href={movie.csfd_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="logo-badge csfd"
+                            >
+                              ČSFD
+                            </a>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {editing ? (
                         <input
                           type="number"
+                          className="revenue-input"
                           min={0}
-                          step={0.01}
-                          placeholder="miliony, např. 123,45"
-                          value={effectiveRevenue(movie)}
-                          onChange={(event) => {
-                            const { value } = event.currentTarget;
-                            setRevenueDrafts((current) => ({ ...current, [movie.id]: value }));
-                          }}
+                          max={9999.9}
+                          step={0.1}
+                          placeholder="miliony, např. 10,1"
+                          value={editing.revenue}
+                          onChange={(event) =>
+                            updateMovieEdit(movie.id, "revenue", event.currentTarget.value)
+                          }
                         />
-                        <button
-                          type="button"
-                          disabled={revenueAction(movie).disabled}
-                          onClick={() => void handleSaveRevenue(movie)}
-                        >
-                          {revenueAction(movie).label}
-                        </button>
-                      </div>
+                      ) : (
+                        <span>{formatRevenue(movie.actual_revenue)}</span>
+                      )}
                     </td>
+                    {!round.evaluated_date ? (
+                      <td>
+                        {editing ? (
+                          <div className="movie-edit-actions">
+                            <button
+                              type="button"
+                              className="primary"
+                              disabled={busy}
+                              onClick={() => void saveMovie(movie)}
+                            >
+                              Uložit
+                            </button>
+                            <button type="button" disabled={busy} onClick={() => cancelEditMovie(movie.id)}>
+                              Zrušit
+                            </button>
+                          </div>
+                        ) : (
+                          <button type="button" disabled={busy} onClick={() => startEditMovie(movie)}>
+                            Upravit
+                          </button>
+                        )}
+                      </td>
+                    ) : null}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+              </div>
+              ) : null}
           </section>
           );
         })
       )}
+      {confirmElement}
     </section>
   );
 }

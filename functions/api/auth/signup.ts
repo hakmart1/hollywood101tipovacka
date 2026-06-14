@@ -6,6 +6,7 @@ import {
   validateEmail,
   validatePassword
 } from "../../_lib/auth";
+import { gravatarHash } from "../../_lib/gravatar";
 import type { Env, SignupRequestBody } from "../../_lib/types";
 
 interface PagesContext {
@@ -55,12 +56,13 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   try {
     const passwordHash = await hashPassword(password);
+    const avatarHash = await gravatarHash(email);
 
     const insertUserResult = await context.env.DB.prepare(
       `INSERT INTO users
-        (nickname, email, status, role, activated_date, last_login_date, imf_coins_balance)
-       VALUES (?1, ?2, 'pending_activation', 'player', NULL, NULL, 0)`
-    ).bind(nickname, email).run();
+        (nickname, email, status, role, activated_date, last_login_date, imf_coins_balance, avatar_hash)
+       VALUES (?1, ?2, 'pending_activation', 'player', NULL, NULL, 0, ?3)`
+    ).bind(nickname, email, avatarHash).run();
 
     const insertedUserId =
       typeof insertUserResult.meta.last_row_id === "number"
