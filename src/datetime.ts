@@ -81,7 +81,7 @@ export function zonedToUtcIso(local: string, timeZone?: string | null): string {
   }
 }
 
-// Suggested contest title from a start date: "2026 Week 24" (ISO-8601 week).
+// Suggested contest title from a start date: "2026 - 24. týden" (ISO-8601 week).
 // Accepts a "YYYY-MM-DD..." string and reads the date part directly.
 export function weekTitle(dateValue: string): string {
   const parts = dateValue.slice(0, 10).split("-").map(Number);
@@ -101,7 +101,7 @@ export function weekTitle(dateValue: string): string {
   firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
 
   const week = 1 + Math.round((date.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000));
-  return `${isoYear} Week ${String(week).padStart(2, "0")}`;
+  return `${isoYear} - ${week}. týden`;
 }
 
 // UTC ISO string -> a datetime-local input value ("YYYY-MM-DDTHH:MM") expressed
