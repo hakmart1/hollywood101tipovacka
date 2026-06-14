@@ -395,6 +395,26 @@ button:disabled {
   cursor: default;
 }
 
+.modal-forgot {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+button.linklike {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #2f6fdb;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+button.linklike:hover {
+  background: none;
+  color: #245cba;
+}
+
 .code-requests {
   background: #fff8e1;
   border: 1px solid #f0d488;

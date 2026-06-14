@@ -119,6 +119,53 @@ export async function verifySession(
   return payload;
 }
 
+// Stateless password-reset token: HMAC over userId+expiry+current password hash.
+// No DB table needed, and it self-invalidates once the password changes (the
+// hash in the signature no longer matches) or the expiry passes.
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function createPasswordResetToken(
+  userId: number,
+  passwordHash: string,
+  secret: string
+): Promise<string> {
+  const exp = Date.now() + PASSWORD_RESET_TTL_MS;
+  const payload = `${userId}.${exp}`;
+  const signature = await createHmac(`${payload}.${passwordHash}`, secret);
+  return `${payload}.${signature}`;
+}
+
+// Verifies the token against the user's current password hash. Returns the user
+// id if valid and unexpired, otherwise null.
+export async function verifyPasswordResetToken(
+  token: string,
+  passwordHash: string,
+  secret: string | undefined
+): Promise<number | null> {
+  if (!secret) {
+    return null;
+  }
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return null;
+  }
+  const [userIdStr, expStr, signature] = parts;
+  const userId = Number.parseInt(userIdStr, 10);
+  const exp = Number.parseInt(expStr, 10);
+  if (!Number.isInteger(userId) || !Number.isInteger(exp) || Date.now() > exp) {
+    return null;
+  }
+  const expected = await createHmac(`${userIdStr}.${expStr}.${passwordHash}`, secret);
+  return timingSafeEqual(signature, expected) ? userId : null;
+}
+
+// Just the user id from a (possibly invalid) token — used to look up the hash
+// before the signature is verified. Returns null if the shape is wrong.
+export function readPasswordResetUserId(token: string): number | null {
+  const userId = Number.parseInt(token.split(".")[0] || "", 10);
+  return Number.isInteger(userId) && userId > 0 ? userId : null;
+}
+
 export function normalizeEmail(email: unknown): string {
   return String(email || "").trim().toLowerCase();
 }

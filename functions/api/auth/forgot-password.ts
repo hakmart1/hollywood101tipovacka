@@ -1,0 +1,75 @@
+import { createPasswordResetToken, json, normalizeEmail, validateEmail } from "../../_lib/auth";
+import { sendEmail } from "../../_lib/email";
+import type { Env } from "../../_lib/types";
+
+interface PagesContext {
+  env: Env;
+  request: Request;
+}
+
+interface ForgotPasswordRequestBody {
+  email?: unknown;
+}
+
+// Always returns the same generic message regardless of whether the account
+// exists, to avoid leaking which e-mails are registered.
+const GENERIC =
+  "Pokud k tomuto e-mailu existuje účet, poslali jsme na něj odkaz pro obnovení hesla.";
+
+export async function onRequestPost(context: PagesContext): Promise<Response> {
+  let payload: ForgotPasswordRequestBody;
+  try {
+    payload = (await context.request.json()) as ForgotPasswordRequestBody;
+  } catch {
+    return json({ error: "Neplatný požadavek." });
+  }
+
+  const email = normalizeEmail(payload.email);
+  if (!email || !validateEmail(email)) {
+    return json({ error: "Zadejte platný e-mail." });
+  }
+
+  const account = await context.env.DB.prepare(
+    `SELECT users.id, users.nickname, user_auth_identities.password_hash
+       FROM users
+       INNER JOIN user_auth_identities ON user_auth_identities.user_id = users.id
+      WHERE user_auth_identities.provider = 'local'
+        AND users.email = ?1
+        AND users.status != 'deleted'`
+  ).bind(email).first<{ id: number; nickname: string; password_hash: string }>();
+
+  // Only do real work when the account exists and the secret is configured; the
+  // response is identical either way.
+  if (account && context.env.SESSION_SECRET) {
+    const token = await createPasswordResetToken(
+      account.id,
+      account.password_hash,
+      context.env.SESSION_SECRET
+    );
+    const origin = new URL(context.request.url).origin;
+    const resetUrl = `${origin}/#/reset?token=${encodeURIComponent(token)}`;
+    await sendEmail(context.env, {
+      to: email,
+      subject: "Obnovení hesla – Hollywood 101 Tipovačka",
+      html:
+        `<p>Ahoj ${escapeHtml(account.nickname)},</p>` +
+        `<p>Pro nastavení nového hesla klikni na odkaz (platí 1 hodinu):</p>` +
+        `<p><a href="${resetUrl}">Obnovit heslo</a></p>` +
+        `<p>Pokud jsi o obnovení nežádal(a), tento e-mail ignoruj.</p>`,
+      text:
+        `Ahoj ${account.nickname},\n\n` +
+        `Pro nastavení nového hesla otevři tento odkaz (platí 1 hodinu):\n${resetUrl}\n\n` +
+        `Pokud jsi o obnovení nežádal(a), e-mail ignoruj.`
+    });
+  }
+
+  return json({ error: null, message: GENERIC });
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}

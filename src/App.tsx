@@ -7,6 +7,7 @@ import HomeResults from "./HomeResults";
 import LeaderboardPage from "./LeaderboardPage";
 import Modal from "./Modal";
 import ResultsArchivePage from "./ResultsArchivePage";
+import ResetPasswordPage from "./ResetPasswordPage";
 import RulesPage from "./RulesPage";
 import TermsPage from "./TermsPage";
 import UserPage from "./UserPage";
@@ -47,6 +48,7 @@ type Route =
   | "user"
   | "rules"
   | "terms"
+  | "reset"
   | "history"
   | "leaderboard"
   | "admin-codes"
@@ -82,6 +84,9 @@ function readRoute(): Route {
   }
   if (hash === "#/podminky") {
     return "terms";
+  }
+  if (hash.startsWith("#/reset")) {
+    return "reset";
   }
   if (hash === "#/results") {
     return "history";
@@ -152,6 +157,8 @@ export default function App() {
   const [activationCode, setActivationCode] = useState("");
   const [infoDialog, setInfoDialog] = useState<string | null>(null);
   const [pendingRequests, setPendingRequests] = useState(0);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   useEffect(() => {
     void refreshSession();
@@ -305,6 +312,21 @@ export default function App() {
     setLoginOpen(false);
     setLoginForm(defaultLoginForm);
     await refreshSession();
+  }
+
+  async function handleForgotSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const response = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email: forgotEmail })
+    });
+    const payload = (await response.json()) as ApiErrorResponse;
+    setOutput(payload.error || payload.message || "Hotovo.");
+    if (!payload.error) {
+      setForgotOpen(false);
+      setForgotEmail("");
+    }
   }
 
   async function handleActivateSubmit(event: FormEvent<HTMLFormElement>) {
@@ -509,6 +531,8 @@ export default function App() {
 
         {route === "terms" ? <TermsPage /> : null}
 
+        {route === "reset" ? <ResetPasswordPage onMessage={setOutput} /> : null}
+
         {route === "history" ? (
           <ResultsArchivePage onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
         ) : null}
@@ -676,12 +700,54 @@ export default function App() {
                 }}
               />
             </div>
+            <p className="modal-forgot">
+              <button
+                type="button"
+                className="linklike"
+                onClick={() => {
+                  setForgotEmail(loginForm.email);
+                  setLoginOpen(false);
+                  setForgotOpen(true);
+                }}
+              >
+                Zapomenuté heslo?
+              </button>
+            </p>
             <div className="form-actions">
               <button type="button" onClick={() => setLoginOpen(false)}>
                 Zrušit
               </button>
               <button type="submit" className="primary">
                 Přihlásit
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+
+      {forgotOpen ? (
+        <Modal title="Obnovení hesla" onClose={() => setForgotOpen(false)}>
+          <form onSubmit={handleForgotSubmit}>
+            <p className="modal-note">
+              Zadej e-mail svého účtu a pošleme ti odkaz pro nastavení nového hesla.
+            </p>
+            <div className="form-field">
+              <label htmlFor="forgot-email">E-mail</label>
+              <input
+                id="forgot-email"
+                type="email"
+                required
+                autoFocus
+                value={forgotEmail}
+                onChange={(event) => setForgotEmail(event.currentTarget.value)}
+              />
+            </div>
+            <div className="form-actions">
+              <button type="button" onClick={() => setForgotOpen(false)}>
+                Zrušit
+              </button>
+              <button type="submit" className="primary">
+                Poslat odkaz
               </button>
             </div>
           </form>

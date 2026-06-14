@@ -4,6 +4,11 @@ export type UserRole = "player" | "admin";
 export interface Env {
   DB: D1Database;
   SESSION_SECRET?: string;
+  // Mailjet transactional email (single verified sender — no domain needed).
+  MAILJET_API_KEY?: string;
+  MAILJET_SECRET_KEY?: string;
+  // Verified sender address; defaults to hakmart1@gmail.com when unset.
+  EMAIL_FROM?: string;
 }
 
 export interface SessionPayload {
