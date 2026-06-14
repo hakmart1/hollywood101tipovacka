@@ -59,6 +59,9 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   }
 
   const now = new Date().toISOString();
+  if (now < movie.date_from) {
+    return json({ error: "Tipování této tipovačky ještě nezačalo." });
+  }
   if (now > movie.date_to) {
     return json({ error: "Tipování této tipovačky už skončilo." });
   }

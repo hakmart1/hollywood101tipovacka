@@ -18,6 +18,7 @@ interface Contest {
   date_to: string;
   description: string | null;
   type: "standard" | "bonus";
+  scheduled_evaluation_date: string | null;
   movies: ContestMovie[];
 }
 
@@ -47,10 +48,28 @@ function formatMillions(revenue: number): string {
   })} M`;
 }
 
+function formatCountdown(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const clock = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return days > 0 ? `${days} d ${clock}` : clock;
+}
+
 export default function HomeContests({ user, onMessage, onSessionRefresh }: HomeContestsProps) {
   const [contests, setContests] = useState<Contest[] | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick once a second to drive the evaluation countdown.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -162,8 +181,12 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
     );
   }
 
-  const nowMs = Date.now();
-  const sorted = [...contests].sort((a, b) => {
+  const nowMs = now;
+  const started = contests.filter((contest) => new Date(contest.date_from).getTime() <= nowMs);
+  const upcoming = contests
+    .filter((contest) => new Date(contest.date_from).getTime() > nowMs)
+    .sort((a, b) => new Date(a.date_from).getTime() - new Date(b.date_from).getTime());
+  const sorted = [...started].sort((a, b) => {
     const aClosed = new Date(a.date_to).getTime() < nowMs;
     const bClosed = new Date(b.date_to).getTime() < nowMs;
     if (aClosed !== bClosed) {
@@ -175,18 +198,61 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
   return (
     <section className="home-contests">
       <h2>Aktivní tipovačky</h2>
+
+      {upcoming.length > 0 ? (
+        <div className="upcoming-contests">
+          {upcoming.map((contest) => {
+            const startMs = new Date(contest.date_from).getTime();
+            return (
+              <div className="upcoming-item" key={contest.id}>
+                <span className="upcoming-title">
+                  {contest.type === "bonus" ? "[Bonus] " : ""}
+                  {contest.title}
+                </span>
+                <span className="upcoming-countdown">
+                  začíná za <span className="eval-clock">{formatCountdown(startMs - nowMs)}</span>{" "}
+                  ({formatDateTime(contest.date_from)})
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {sorted.length === 0 ? <p className="no-contest">Žádná aktivní tipovačka.</p> : null}
       {sorted.map((contest) => {
         const closed = new Date(contest.date_to).getTime() < nowMs;
+        const scheduledMs = contest.scheduled_evaluation_date
+          ? new Date(contest.scheduled_evaluation_date).getTime()
+          : null;
         return (
         <section className="round-card" key={contest.id}>
           <h3>{contest.title}</h3>
-          <p className="round-dates">
-            {closed
-              ? `Tipování uzavřeno (${formatDateTime(contest.date_to)}) – čeká na vyhodnocení`
-              : `Otevřeno do ${formatDateTime(contest.date_to)}${
-                  contest.type === "standard" ? " – Tržby za otvírací víkend" : ""
-                }`}
-          </p>
+          {closed ? (
+            <>
+              <p className="round-dates">
+                Tipování uzavřeno ({formatDateTime(contest.date_to)})
+              </p>
+              {scheduledMs !== null ? (
+                nowMs < scheduledMs ? (
+                  <p className="eval-countdown">
+                    Vyhodnocení <span className="eval-clock">za {formatCountdown(scheduledMs - nowMs)}</span>{" "}
+                    ({formatDateTime(contest.scheduled_evaluation_date)})
+                  </p>
+                ) : (
+                  <p className="eval-countdown soon">Vyhodnocení proběhne každou chvíli…</p>
+                )
+              ) : (
+                <p className="round-dates">Čeká na vyhodnocení</p>
+              )}
+            </>
+          ) : (
+            <p className="round-dates">
+              {`Otevřeno do ${formatDateTime(contest.date_to)}${
+                contest.type === "standard" ? " – Tržby za otvírací víkend" : ""
+              }`}
+            </p>
+          )}
           {contest.description ? <p>{contest.description}</p> : null}
           <table className="data-table">
             <thead>

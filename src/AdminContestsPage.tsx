@@ -459,12 +459,15 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   }
 
   function toggleForm() {
-    // Opening a fresh form: prefill the start with the upcoming Monday and the
-    // end two days later.
+    // Opening a fresh form: prefill start = upcoming Monday 06:00, end = the day
+    // before the +2-day mark at 23:59 (one minute before midnight, so it reads as
+    // the previous day, not 00:00 of the next).
     if (!formOpen) {
-      const start = nextMondayInput(timezone);
+      const monday = nextMondayInput(timezone).slice(0, 10);
+      const start = `${monday}T06:00`;
+      const end = `${addDaysToInput(`${monday}T00:00`, 1).slice(0, 10)}T23:59`;
       applyDateFrom(start);
-      setForm((current) => ({ ...current, date_to: addDaysToInput(start, 2) }));
+      setForm((current) => ({ ...current, date_to: end }));
     }
     setFormOpen((open) => !open);
   }
@@ -615,6 +618,19 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       ) : (
         rounds.map((round) => {
           const isFinished = new Date(round.date_to).getTime() < Date.now();
+          const notStarted = new Date(round.date_from).getTime() > Date.now();
+          // Status dot: not started yet = red, running/ended without a scheduled
+          // evaluation = yellow, scheduled evaluation = green.
+          const dotClass = round.scheduled_evaluation_date
+            ? "scheduled"
+            : notStarted
+              ? "notstarted"
+              : "";
+          const dotLabel = round.scheduled_evaluation_date
+            ? "Vyhodnocení naplánováno"
+            : notStarted
+              ? "Tipování ještě nezačalo"
+              : "Nevyhodnoceno";
           const allResultsFilled =
             round.movies.length > 0 && round.movies.every((movie) => movie.actual_revenue !== null);
           const editing = dateEdits[round.id];
@@ -647,9 +663,9 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                 <span className="round-toggle-title">
                   {!round.evaluated_date ? (
                     <span
-                      className={`round-pending${round.scheduled_evaluation_date ? " scheduled" : ""}`}
-                      title={round.scheduled_evaluation_date ? "Vyhodnocení naplánováno" : "Nevyhodnoceno"}
-                      aria-label={round.scheduled_evaluation_date ? "Vyhodnocení naplánováno" : "Nevyhodnoceno"}
+                      className={`round-pending${dotClass ? ` ${dotClass}` : ""}`}
+                      title={dotLabel}
+                      aria-label={dotLabel}
                     >
                       ●
                     </span>

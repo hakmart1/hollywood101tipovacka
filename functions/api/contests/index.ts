@@ -8,14 +8,14 @@ interface PagesContext {
 }
 
 export async function onRequestGet(context: PagesContext): Promise<Response> {
-  // Every round that hasn't been evaluated yet — including ones past their
-  // deadline (shown but locked) — until results are settled.
+  // Every round that hasn't been evaluated yet — already started ones (open or
+  // locked-and-waiting) plus upcoming ones (shown as a teaser on the home page).
   const rounds = await context.env.DB.prepare(
-    `SELECT id, title, date_from, date_to, description, type
+    `SELECT id, title, date_from, date_to, description, type, scheduled_evaluation_date
       FROM rounds
       WHERE evaluated_date IS NULL
       ORDER BY date_to ASC, id ASC`
-  ).all<RoundRecord>();
+  ).all<RoundRecord & { scheduled_evaluation_date: string | null }>();
 
   if (rounds.results.length === 0) {
     return json({ error: null, contests: [] });
@@ -60,6 +60,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
       date_to: round.date_to,
       description: round.description,
       type: round.type,
+      scheduled_evaluation_date: round.scheduled_evaluation_date,
       movies: (moviesByRound.get(round.id) || []).map((movie) => ({
         id: movie.id,
         movie_title: movie.movie_title,
