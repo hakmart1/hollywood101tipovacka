@@ -16,6 +16,10 @@ interface ForgotPasswordRequestBody {
 const GENERIC =
   "Pokud k tomuto e-mailu existuje účet, poslali jsme na něj odkaz pro obnovení hesla.";
 
+// Don't re-send a reset link to the same account more often than this — silently
+// skips (still returns GENERIC) so it can't be used to flood an inbox.
+const RESET_COOLDOWN_MS = 10 * 60 * 1000;
+
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   let payload: ForgotPasswordRequestBody;
   try {
@@ -30,17 +34,27 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   }
 
   const account = await context.env.DB.prepare(
-    `SELECT users.id, users.nickname, user_auth_identities.password_hash
+    `SELECT users.id, users.nickname, users.last_password_reset_date,
+            user_auth_identities.password_hash
        FROM users
        INNER JOIN user_auth_identities ON user_auth_identities.user_id = users.id
       WHERE user_auth_identities.provider = 'local'
         AND users.email = ?1
         AND users.status != 'deleted'`
-  ).bind(email).first<{ id: number; nickname: string; password_hash: string }>();
+  ).bind(email).first<{
+    id: number;
+    nickname: string;
+    last_password_reset_date: string | null;
+    password_hash: string;
+  }>();
 
-  // Only do real work when the account exists and the secret is configured; the
-  // response is identical either way.
-  if (account && context.env.SESSION_SECRET) {
+  // Only do real work when the account exists, the secret is configured, and the
+  // per-account cooldown has passed. The response is identical in every case.
+  const throttled =
+    account?.last_password_reset_date != null &&
+    Date.now() - Date.parse(account.last_password_reset_date) < RESET_COOLDOWN_MS;
+
+  if (account && context.env.SESSION_SECRET && !throttled) {
     const token = await createPasswordResetToken(
       account.id,
       account.password_hash,
@@ -48,7 +62,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     );
     const origin = new URL(context.request.url).origin;
     const resetUrl = `${origin}/#/reset?token=${encodeURIComponent(token)}`;
-    await sendEmail(context.env, {
+    const sent = await sendEmail(context.env, {
       to: email,
       subject: "Obnovení hesla – Hollywood 101 Tipovačka",
       html:
@@ -61,6 +75,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
         `Pro nastavení nového hesla otevři tento odkaz (platí 1 hodinu):\n${resetUrl}\n\n` +
         `Pokud jsi o obnovení nežádal(a), e-mail ignoruj.`
     });
+    // Start the cooldown only once an email actually went out.
+    if (sent) {
+      await context.env.DB.prepare(
+        "UPDATE users SET last_password_reset_date = ?1 WHERE id = ?2"
+      ).bind(new Date().toISOString(), account.id).run();
+    }
   }
 
   return json({ error: null, message: GENERIC });
