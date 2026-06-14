@@ -1,6 +1,6 @@
 import type { Env } from "./types";
 
-const DEFAULT_SENDER = "hakmart1@gmail.com";
+const DEFAULT_SENDER = "hollywood101tipovacka@gmail.com";
 const SENDER_NAME = "Hollywood 101 Tipovačka";
 
 // Send a transactional email via Mailjet's Send API v3.1 (works from Pages

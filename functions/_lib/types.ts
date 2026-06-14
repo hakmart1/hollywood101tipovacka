@@ -7,7 +7,7 @@ export interface Env {
   // Mailjet transactional email (single verified sender — no domain needed).
   MAILJET_API_KEY?: string;
   MAILJET_SECRET_KEY?: string;
-  // Verified sender address; defaults to hakmart1@gmail.com when unset.
+  // Verified sender address; defaults to hollywood101tipovacka@gmail.com when unset.
   EMAIL_FROM?: string;
 }
 
