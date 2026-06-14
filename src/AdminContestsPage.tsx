@@ -79,7 +79,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   const [movieRows, setMovieRows] = useState<MovieFormRow[]>([emptyMovieRow]);
   const [autoTitle, setAutoTitle] = useState("");
   const [dateEdits, setDateEdits] = useState<
-    Record<number, { title: string; from: string; to: string }>
+    Record<number, { title: string; from: string; to: string; description: string }>
   >({});
   const [movieEdits, setMovieEdits] = useState<
     Record<
@@ -118,7 +118,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
     const payload = (await response.json()) as RoundsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load rounds.");
+      onMessage(payload.error || "Tipovačky se nepodařilo načíst.");
       setRounds([]);
       return;
     }
@@ -158,7 +158,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         await loadRounds();
       }
@@ -173,7 +173,8 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       [round.id]: {
         title: round.title,
         from: utcToZonedInput(round.date_from, timezone),
-        to: utcToZonedInput(round.date_to, timezone)
+        to: utcToZonedInput(round.date_to, timezone),
+        description: round.description ?? ""
       }
     }));
   }
@@ -208,11 +209,12 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         body: JSON.stringify({
           title: edit.title.trim(),
           date_from: zonedToUtcIso(edit.from, timezone),
-          date_to: zonedToUtcIso(edit.to, timezone)
+          date_to: zonedToUtcIso(edit.to, timezone),
+          description: edit.description.trim()
         })
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelEditDates(round.id);
         await loadRounds();
@@ -239,7 +241,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         await loadRounds();
       }
@@ -279,7 +281,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         body: JSON.stringify({ scheduled_evaluation_date: zonedToUtcIso(value, timezone) })
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelScheduleEdit(round.id);
         await loadRounds();
@@ -298,7 +300,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         body: JSON.stringify({ scheduled_evaluation_date: null })
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         await loadRounds();
       }
@@ -333,7 +335,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         })
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
 
       if (!payload.error) {
         // Keep the chosen type as the default for the next round.
@@ -448,7 +450,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         })
       });
       const payload = (await response.json()) as RoundsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelEditMovie(movie.id);
         await loadRounds();
@@ -725,6 +727,19 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                         setDateEdits((current) => ({
                           ...current,
                           [round.id]: { ...current[round.id], to: value }
+                        }));
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="round-desc-edit"
+                      placeholder="Popisek (nepovinné)"
+                      value={editing.description}
+                      onChange={(event) => {
+                        const { value } = event.currentTarget;
+                        setDateEdits((current) => ({
+                          ...current,
+                          [round.id]: { ...current[round.id], description: value }
                         }));
                       }}
                     />

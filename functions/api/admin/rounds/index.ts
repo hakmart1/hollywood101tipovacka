@@ -31,7 +31,7 @@ function normalizeUrl(value: unknown): string | null {
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const rounds = await context.env.DB.prepare(
@@ -72,14 +72,14 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   let payload: CreateRoundRequestBody;
   try {
     payload = (await context.request.json()) as CreateRoundRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const title = String(payload.title || "").trim();
@@ -132,10 +132,10 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
     return json({
       error: null,
-      message: `Round "${title}" created with ${movies.length} movie(s).`
+      message: `Tipovačka „${title}“ vytvořena (${movies.length} filmů).`
     });
   } catch (error) {
     console.error("Round creation failed", error);
-    return json({ error: "Could not create the round right now." });
+    return json({ error: "Tipovačku se teď nepodařilo vytvořit." });
   }
 }

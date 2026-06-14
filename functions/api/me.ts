@@ -42,14 +42,14 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
 export async function onRequestPatch(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
   if (!user) {
-    return json({ error: "You must be logged in." }, 401);
+    return json({ error: "Musíš být přihlášen(a)." }, 401);
   }
 
   let payload: UpdateMeRequestBody;
   try {
     payload = (await context.request.json()) as UpdateMeRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const timezone = String(payload.timezone || "").trim();
@@ -58,7 +58,7 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
     try {
       new Intl.DateTimeFormat("en-US", { timeZone: timezone });
     } catch {
-      return json({ error: "Unknown time zone." });
+      return json({ error: "Neznámá časová zóna." });
     }
   }
 

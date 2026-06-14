@@ -10,7 +10,7 @@ interface PagesContext {
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const result = await context.env.DB.prepare(
@@ -34,7 +34,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   // Retry on the (unlikely) UNIQUE collision of a generated code.
@@ -44,15 +44,15 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
       await context.env.DB.prepare(
         "INSERT INTO activation_codes (code, user_id, consumed_date) VALUES (?1, NULL, NULL)"
       ).bind(code).run();
-      return json({ error: null, message: `Activation code ${code} created.`, code });
+      return json({ error: null, message: `Aktivační kód ${code} vytvořen.`, code });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!message.includes("UNIQUE")) {
         console.error("Activation code insert failed", error);
-        return json({ error: "Could not create activation code." });
+        return json({ error: "Aktivační kód se nepodařilo vytvořit." });
       }
     }
   }
 
-  return json({ error: "Could not create activation code." });
+  return json({ error: "Aktivační kód se nepodařilo vytvořit." });
 }

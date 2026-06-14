@@ -20,18 +20,18 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     payload = (await context.request.json()) as ActivateRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const email = normalizeEmail(payload.email);
   const code = String(payload.code || "").trim();
 
   if (!email || !code) {
-    return json({ error: "Email and activation code are required." });
+    return json({ error: "Vyplňte e-mail a aktivační kód." });
   }
 
   if (!validateEmail(email)) {
-    return json({ error: "Enter a valid email address." });
+    return json({ error: "Zadejte platný e-mail." });
   }
 
   const user = await context.env.DB.prepare(
@@ -44,7 +44,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(email).first<ActivationUserRecord>();
 
   if (!user) {
-    return json({ error: "Account was not found." });
+    return json({ error: "Účet nebyl nalezen." });
   }
 
   const activationCode = await context.env.DB.prepare(
@@ -57,19 +57,19 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(code).first<ActivationLookupRecord>();
 
   if (!activationCode) {
-    return json({ error: "Activation code is invalid." });
+    return json({ error: "Aktivační kód je neplatný." });
   }
 
   if (activationCode.consumed_date) {
-    return json({ error: "This activation code has already been used." });
+    return json({ error: "Tento aktivační kód už byl použit." });
   }
 
   if (activationCode.user_id && activationCode.user_id !== user.id) {
-    return json({ error: "This activation code is assigned to another account." });
+    return json({ error: "Tento aktivační kód patří jinému účtu." });
   }
 
   if (user.status === "active") {
-    return json({ error: null, message: "Account is already active." });
+    return json({ error: null, message: "Účet je už aktivní." });
   }
 
   const ACTIVATION_BONUS = 2_000_000;
@@ -103,7 +103,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   return json({
     error: null,
     message: firstActivation
-      ? `Account activated. Welcome to the IMF — a signing bonus of ${ACTIVATION_BONUS.toLocaleString("en-US")} Imfcoins is yours.`
-      : "Account activated."
+      ? `Účet aktivován. Vítej u Měnového fondu — vstupní bonus ${ACTIVATION_BONUS.toLocaleString("en-US")} Imfcoinů je tvůj.`
+      : "Účet aktivován."
   });
 }

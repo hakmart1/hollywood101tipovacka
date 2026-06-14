@@ -131,7 +131,7 @@ export default function UserPage({
     const payload = (await response.json()) as CoinsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load coin history.");
+      onMessage(payload.error || "Historii Imfcoinů se nepodařilo načíst.");
       setHistory([]);
       return;
     }
@@ -150,7 +150,7 @@ export default function UserPage({
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as CoinsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
 
       if (!payload.error) {
         await onSessionRefresh();

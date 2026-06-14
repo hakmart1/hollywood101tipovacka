@@ -83,7 +83,7 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
     const payload = (await response.json()) as ContestsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load contests.");
+      onMessage(payload.error || "Tipovačky se nepodařilo načíst.");
       setContests([]);
       return;
     }
@@ -114,9 +114,12 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
         body: JSON.stringify({ movie_id: movie.id, guessed_millions: millions })
       });
       const payload = (await response.json()) as ContestsResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      if (payload.error) {
+        onMessage(payload.error);
+      }
 
       if (!payload.error) {
+        // No success toast — the placed tip shows right in the table.
         setDrafts((current) => {
           const next = { ...current };
           delete next[movie.id];

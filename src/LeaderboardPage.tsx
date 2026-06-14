@@ -27,7 +27,7 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
     const payload = (await response.json()) as ResultsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load leaderboard.");
+      onMessage(payload.error || "Žebříček se nepodařilo načíst.");
       setLeaderboard([]);
       return;
     }

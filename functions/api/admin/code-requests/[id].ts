@@ -13,12 +13,12 @@ interface PagesContext {
 export async function onRequestDelete(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const userId = Number.parseInt(context.params.id, 10);
   if (!Number.isInteger(userId) || userId < 1) {
-    return json({ error: "Invalid user id." });
+    return json({ error: "Neplatné ID uživatele." });
   }
 
   await context.env.DB.prepare(

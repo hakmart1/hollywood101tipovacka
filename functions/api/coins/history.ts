@@ -12,7 +12,7 @@ const PAGE_SIZE = 10;
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
   if (!user) {
-    return json({ error: "You must be logged in." }, 401);
+    return json({ error: "Musíš být přihlášen(a)." }, 401);
   }
 
   const url = new URL(context.request.url);

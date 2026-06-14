@@ -23,18 +23,18 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     payload = (await context.request.json()) as LoginRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const email = normalizeEmail(payload.email);
   const password = payload.password;
 
   if (!email || !password) {
-    return json({ error: "Email and password are required." });
+    return json({ error: "Vyplňte e-mail a heslo." });
   }
 
   if (!validateEmail(email)) {
-    return json({ error: "Enter a valid email address." });
+    return json({ error: "Zadejte platný e-mail." });
   }
 
   const account = await context.env.DB.prepare(
@@ -54,12 +54,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(email).first<LoginAccountRecord>();
 
   if (!account) {
-    return json({ error: "Invalid email or password." });
+    return json({ error: "Nesprávný e-mail nebo heslo." });
   }
 
   const passwordValid = await verifyPassword(password, account.password_hash);
   if (!passwordValid) {
-    return json({ error: "Invalid email or password." });
+    return json({ error: "Nesprávný e-mail nebo heslo." });
   }
 
   const now = new Date().toISOString();
@@ -78,7 +78,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   return new Response(
     JSON.stringify({
       error: null,
-      message: "Login successful.",
+      message: "Přihlášení proběhlo úspěšně.",
       user: {
         id: account.id,
         nickname: account.nickname,

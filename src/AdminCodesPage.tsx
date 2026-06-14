@@ -144,7 +144,7 @@ export default function AdminCodesPage({
     const payload = (await response.json()) as CodesResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load activation codes.");
+      onMessage(payload.error || "Aktivační kódy se nepodařilo načíst.");
       setCodes([]);
       return;
     }
@@ -160,7 +160,7 @@ export default function AdminCodesPage({
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as CodesResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       await loadCodes();
     } finally {
       setBusy(false);
@@ -220,7 +220,7 @@ export default function AdminCodesPage({
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as CodesResponse;
-      onMessage(payload.error || payload.message || "Done.");
+      onMessage(payload.error || payload.message || "Hotovo.");
       await loadCodes();
     } finally {
       setBusy(false);

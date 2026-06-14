@@ -31,19 +31,19 @@ function normalizeUrl(value: unknown): string | null {
 export async function onRequestPatch(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const movieId = Number.parseInt(context.params.id, 10);
   if (!Number.isInteger(movieId) || movieId < 1) {
-    return json({ error: "Invalid movie id." });
+    return json({ error: "Neplatné ID filmu." });
   }
 
   let payload: UpdateMovieRequestBody;
   try {
     payload = (await context.request.json()) as UpdateMovieRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   // Partial update: only the columns present in the body are touched.
@@ -77,7 +77,7 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   if ("actual_revenue" in payload) {
     const revenue = payload.actual_revenue;
     if (revenue !== null && (!Number.isInteger(revenue) || (revenue as number) < 0)) {
-      return json({ error: "Box office result must be a non-negative whole number, or empty to clear it." });
+      return json({ error: "Tržby musí být nezáporné celé číslo (nebo prázdné pro vymazání)." });
     }
     if (revenue !== null && (revenue as number) > 9_999_900_000) {
       return json({ error: "Tržby mohou být nejvýše 9999,9 M." });
@@ -87,7 +87,7 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   }
 
   if (sets.length === 0) {
-    return json({ error: "Nothing to update." });
+    return json({ error: "Není co uložit." });
   }
 
   binds.push(movieId);
@@ -96,7 +96,7 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   ).bind(...binds).run();
 
   if (result.meta.changes === 0) {
-    return json({ error: "Movie was not found." });
+    return json({ error: "Film nebyl nalezen." });
   }
 
   // Removing a box office result makes the round no longer evaluable, so cancel

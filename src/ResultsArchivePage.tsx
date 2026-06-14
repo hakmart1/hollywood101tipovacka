@@ -44,7 +44,7 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
     const payload = (await response.json()) as HistoryResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load past rounds.");
+      onMessage(payload.error || "Minulé tipovačky se nepodařilo načíst.");
       setRounds([]);
       return;
     }
@@ -68,7 +68,7 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
     const payload = (await response.json()) as DetailResponse;
 
     if (!response.ok || payload.error || !payload.result) {
-      onMessage(payload.error || "Could not load the round result.");
+      onMessage(payload.error || "Výsledek tipovačky se nepodařilo načíst.");
       return;
     }
 

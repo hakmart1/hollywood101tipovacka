@@ -12,7 +12,7 @@ interface PagesContext {
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const requests = await context.env.DB.prepare(

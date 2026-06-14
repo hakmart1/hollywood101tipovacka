@@ -102,6 +102,7 @@ export interface UpdateRoundRequestBody {
   title?: string;
   date_from?: string;
   date_to?: string;
+  description?: string;
 }
 
 export interface MovieRecord {

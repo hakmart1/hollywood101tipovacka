@@ -30,7 +30,7 @@ export async function checkRoundEvaluable(env: Env, roundId: number): Promise<st
   ).bind(roundId).first<{ date_to: string; evaluated_date: string | null }>();
 
   if (!round) {
-    return "Round was not found.";
+    return "Tipovačka nebyla nalezena.";
   }
   if (round.evaluated_date) {
     return "This round has already been evaluated.";
@@ -72,7 +72,7 @@ export async function evaluateRound(
     "SELECT id, title, date_to, evaluated_date FROM rounds WHERE id = ?1"
   ).bind(roundId).first<EvaluateRoundRecord>();
   if (!round) {
-    return { error: "Round was not found." };
+    return { error: "Tipovačka nebyla nalezena." };
   }
 
   const now = new Date().toISOString();
@@ -161,6 +161,6 @@ export async function evaluateRound(
 
   return {
     error: null,
-    message: `Round evaluated. Paid ${totalPaid.toLocaleString("en-US")} Imfcoins to ${userTotals.size} player(s).`
+    message: `Vyhodnoceno. Vyplaceno ${totalPaid.toLocaleString("en-US")} Imfcoinů (${userTotals.size} hráčů).`
   };
 }

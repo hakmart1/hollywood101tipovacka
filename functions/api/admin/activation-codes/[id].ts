@@ -16,19 +16,19 @@ interface ReserveRequestBody {
 export async function onRequestPatch(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const codeId = Number.parseInt(context.params.id, 10);
   if (!Number.isInteger(codeId) || codeId < 1) {
-    return json({ error: "Invalid activation code id." });
+    return json({ error: "Neplatné ID aktivačního kódu." });
   }
 
   let payload: ReserveRequestBody;
   try {
     payload = (await context.request.json()) as ReserveRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const reservedDate = payload.reserved ? new Date().toISOString() : null;
@@ -37,7 +37,7 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   ).bind(reservedDate, codeId).run();
 
   if (result.meta.changes === 0) {
-    return json({ error: "Activation code was not found." });
+    return json({ error: "Aktivační kód nebyl nalezen." });
   }
 
   return json({ error: null, message: payload.reserved ? "Kód rezervován." : "Rezervace zrušena." });
@@ -46,12 +46,12 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
 export async function onRequestDelete(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const codeId = Number.parseInt(context.params.id, 10);
   if (!Number.isInteger(codeId) || codeId < 1) {
-    return json({ error: "Invalid activation code id." });
+    return json({ error: "Neplatné ID aktivačního kódu." });
   }
 
   const activationCode = await context.env.DB.prepare(
@@ -59,7 +59,7 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
   ).bind(codeId).first<ActivationCodeDeleteRecord>();
 
   if (!activationCode) {
-    return json({ error: "Activation code was not found." });
+    return json({ error: "Aktivační kód nebyl nalezen." });
   }
 
   const redeemedByUser = activationCode.user_id !== null && activationCode.consumed_date !== null;
@@ -77,7 +77,7 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
 
     return json({
       error: null,
-      message: "Activation code removed. The user who redeemed it was deactivated."
+      message: "Kód odebrán. Uživatel, který ho použil, byl deaktivován."
     });
   }
 
@@ -85,5 +85,5 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
     "DELETE FROM activation_codes WHERE id = ?1"
   ).bind(codeId).run();
 
-  return json({ error: null, message: "Activation code removed." });
+  return json({ error: null, message: "Kód odebrán." });
 }

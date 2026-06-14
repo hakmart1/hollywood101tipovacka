@@ -860,7 +860,8 @@ button.linklike:hover {
   font: inherit;
 }
 
-.date-edit .round-title-edit {
+.date-edit .round-title-edit,
+.date-edit .round-desc-edit {
   min-width: 14rem;
 }
 

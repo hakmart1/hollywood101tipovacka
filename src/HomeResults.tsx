@@ -32,7 +32,7 @@ export default function HomeResults({ onMessage, highlightNickname }: HomeResult
     const payload = (await response.json()) as ResultsResponse;
 
     if (!response.ok || payload.error) {
-      onMessage(payload.error || "Could not load results.");
+      onMessage(payload.error || "Výsledky se nepodařilo načíst.");
       setLeaderboard([]);
       return;
     }

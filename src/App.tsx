@@ -225,7 +225,7 @@ export default function App() {
       const payload = (await response.json()) as { user?: User | null; error: string | null };
 
       if (!response.ok) {
-        setOutput(payload.error || "Could not load session.");
+        setOutput(payload.error || "Nepodařilo se načíst přihlášení.");
         setCurrentUser(null);
         setLoginState("not-logged");
         return;
@@ -247,7 +247,7 @@ export default function App() {
       setCurrentUser(payload.user);
       setLoginState(payload.user.status === "active" ? "logged and active user" : "logged but unactive user");
     } catch {
-      setOutput("Could not reach the backend functions.");
+      setOutput("Nepodařilo se spojit se serverem.");
       setCurrentUser(null);
       setLoginState("not-logged");
     }
@@ -257,7 +257,7 @@ export default function App() {
     event.preventDefault();
 
     if (signupForm.password !== signupForm.passwordVerify) {
-      setOutput("Passwords do not match.");
+      setOutput("Hesla se neshodují.");
       return;
     }
 
@@ -277,11 +277,11 @@ export default function App() {
     const payload = (await response.json()) as SignupResponse;
 
     if (!response.ok || payload.error) {
-      setOutput(payload.error || "Sign up failed.");
+      setOutput(payload.error || "Registrace selhala.");
       return;
     }
 
-    setOutput(payload.message || "User created.");
+    // No success toast — just close the form.
     setSignupOpen(false);
     setSignupForm(defaultSignupForm);
   }
@@ -304,11 +304,11 @@ export default function App() {
     const payload = (await response.json()) as LoginResponse;
 
     if (!response.ok || payload.error) {
-      setOutput(payload.error || "Login failed.");
+      setOutput(payload.error || "Přihlášení selhalo.");
       return;
     }
 
-    setOutput(payload.message || "Login successful.");
+    setOutput(payload.message || "Přihlášení proběhlo úspěšně.");
     setLoginOpen(false);
     setLoginForm(defaultLoginForm);
     await refreshSession();
@@ -351,11 +351,11 @@ export default function App() {
     const payload = (await response.json()) as ApiErrorResponse;
 
     if (!response.ok || payload.error) {
-      setOutput(payload.error || "Activation failed.");
+      setOutput(payload.error || "Aktivace selhala.");
       return;
     }
 
-    setOutput(payload.message || "Account activated.");
+    setOutput(payload.message || "Účet aktivován.");
     setActivateOpen(false);
     setActivationCode("");
     await refreshSession();
@@ -369,7 +369,7 @@ export default function App() {
 
     const payload = (await response.json()) as ApiErrorResponse;
     setActivateOpen(false);
-    setInfoDialog(payload.error || payload.message || "Activation code requested.");
+    setInfoDialog(payload.error || payload.message || "Žádost o aktivační kód odeslána.");
   }
 
   async function handleTimezoneChange(timezone: string) {
@@ -383,14 +383,14 @@ export default function App() {
     });
 
     const payload = (await response.json()) as ApiErrorResponse;
-    setOutput(payload.error || payload.message || "Time zone updated.");
+    setOutput(payload.error || payload.message || "Časová zóna uložena.");
     await refreshSession();
   }
 
   async function handleLogout() {
     const response = await fetch("/api/auth/logout", { method: "POST" });
     const payload = (await response.json()) as LogoutResponse;
-    setOutput(payload.error || payload.message || "Logged out.");
+    setOutput(payload.error || payload.message || "Odhlášeno.");
     window.location.hash = "#/";
     await refreshSession();
   }

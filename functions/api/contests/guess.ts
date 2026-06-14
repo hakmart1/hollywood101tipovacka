@@ -12,23 +12,23 @@ const GUESS_COST = 100_000;
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
   if (!user) {
-    return json({ error: "You must be logged in to participate." }, 401);
+    return json({ error: "Pro tipování musíš být přihlášen(a)." }, 401);
   }
 
   if (user.status !== "active") {
-    return json({ error: "Only activated accounts can participate." });
+    return json({ error: "Tipovat mohou jen aktivované účty." });
   }
 
   let payload: GuessRequestBody;
   try {
     payload = (await context.request.json()) as GuessRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const movieId = Number(payload.movie_id);
   if (!Number.isInteger(movieId) || movieId < 1) {
-    return json({ error: "Invalid movie." });
+    return json({ error: "Neplatný film." });
   }
 
   const millions = Number(payload.guessed_millions);
@@ -55,7 +55,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(movieId).first<GuessTargetRecord>();
 
   if (!movie) {
-    return json({ error: "Movie was not found." });
+    return json({ error: "Film nebyl nalezen." });
   }
 
   const now = new Date().toISOString();
@@ -71,12 +71,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(movie.round_id, user.id, movieId).first<{ id: number }>();
 
   if (existing) {
-    return json({ error: "You have already placed a guess for this movie." });
+    return json({ error: "Tento film už máš otipovaný." });
   }
 
   if (user.imf_coins_balance < GUESS_COST) {
     return json({
-      error: `You need ${GUESS_COST.toLocaleString("en-US")} coins to guess, but have ${user.imf_coins_balance.toLocaleString("en-US")}.`
+      error: `Na tip potřebuješ ${GUESS_COST.toLocaleString("en-US")} Imfcoinů, ale máš jen ${user.imf_coins_balance.toLocaleString("en-US")}.`
     });
   }
 
@@ -94,11 +94,11 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     ]);
   } catch (error) {
     console.error("Guess insert failed", error);
-    return json({ error: "Could not place your guess right now." });
+    return json({ error: "Tip se teď nepodařilo uložit." });
   }
 
   return json({
     error: null,
-    message: `Guess placed for ${movie.movie_title}. ${GUESS_COST.toLocaleString("en-US")} Imfcoins were spent.`
+    message: `Tip na „${movie.movie_title}“ uložen. Strženo ${GUESS_COST.toLocaleString("en-US")} Imfcoinů.`
   });
 }

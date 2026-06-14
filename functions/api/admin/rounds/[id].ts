@@ -20,12 +20,12 @@ function parseRoundId(value: string): number | null {
 export async function onRequestDelete(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const roundId = parseRoundId(context.params.id);
   if (roundId === null) {
-    return json({ error: "Invalid round id." });
+    return json({ error: "Neplatné ID tipovačky." });
   }
 
   const round = await context.env.DB.prepare(
@@ -33,7 +33,7 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
   ).bind(roundId).first<{ id: number }>();
 
   if (!round) {
-    return json({ error: "Round was not found." });
+    return json({ error: "Tipovačka nebyla nalezena." });
   }
 
   const guesses = await context.env.DB.prepare(
@@ -41,7 +41,7 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
   ).bind(roundId).first<{ count: number }>();
 
   if (guesses && guesses.count > 0) {
-    return json({ error: "Cannot delete a round that already has guesses." });
+    return json({ error: "Tipovačku, která už má tipy, nelze smazat." });
   }
 
   // No guesses, so only the movies depend on this round; remove them explicitly.
@@ -50,31 +50,32 @@ export async function onRequestDelete(context: PagesContext): Promise<Response> 
     context.env.DB.prepare("DELETE FROM rounds WHERE id = ?1").bind(roundId)
   ]);
 
-  return json({ error: null, message: "Round removed." });
+  return json({ error: null, message: "Tipovačka smazána." });
 }
 
 // Edit the contest's start/end date-times (correcting a mistaken entry).
 export async function onRequestPatch(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const roundId = parseRoundId(context.params.id);
   if (roundId === null) {
-    return json({ error: "Invalid round id." });
+    return json({ error: "Neplatné ID tipovačky." });
   }
 
   let payload: UpdateRoundRequestBody;
   try {
     payload = (await context.request.json()) as UpdateRoundRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const title = String(payload.title || "").trim();
   const dateFrom = String(payload.date_from || "").trim();
   const dateTo = String(payload.date_to || "").trim();
+  const description = String(payload.description || "").trim() || null;
 
   if (!title) {
     return json({ error: "Název tipovačky je povinný." });
@@ -89,14 +90,14 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   }
 
   const result = await context.env.DB.prepare(
-    "UPDATE rounds SET title = ?1, date_from = ?2, date_to = ?3 WHERE id = ?4"
-  ).bind(title, dateFrom, dateTo, roundId).run();
+    "UPDATE rounds SET title = ?1, date_from = ?2, date_to = ?3, description = ?4 WHERE id = ?5"
+  ).bind(title, dateFrom, dateTo, description, roundId).run();
 
   if (result.meta.changes === 0) {
-    return json({ error: "Round was not found." });
+    return json({ error: "Tipovačka nebyla nalezena." });
   }
 
-  return json({ error: null, message: "Round dates updated." });
+  return json({ error: null, message: "Tipovačka uložena." });
 }
 
 interface EvaluateRequestBody {
@@ -112,12 +113,12 @@ interface EvaluateRequestBody {
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
-    return json({ error: "Admin access required." }, 403);
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
   const roundId = parseRoundId(context.params.id);
   if (roundId === null) {
-    return json({ error: "Invalid round id." });
+    return json({ error: "Neplatné ID tipovačky." });
   }
 
   let body: EvaluateRequestBody = {};

@@ -19,7 +19,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   try {
     payload = (await context.request.json()) as SignupRequestBody;
   } catch {
-    return json({ error: "Invalid request body." });
+    return json({ error: "Neplatný požadavek." });
   }
 
   const email = normalizeEmail(payload.email);
@@ -27,15 +27,15 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   const password = payload.password;
 
   if (!email || !validateEmail(email)) {
-    return json({ error: "Enter a valid email address." });
+    return json({ error: "Zadejte platný e-mail." });
   }
 
   if (!nickname || nickname.length < 3 || nickname.length > 30) {
-    return json({ error: "Nickname must be between 3 and 30 characters." });
+    return json({ error: "Přezdívka musí mít 3 až 30 znaků." });
   }
 
   if (!validatePassword(password)) {
-    return json({ error: "Password must be at least 8 characters long." });
+    return json({ error: "Heslo musí mít alespoň 8 znaků." });
   }
 
   const existingUserByEmail = await context.env.DB.prepare(
@@ -43,7 +43,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(email).first<{ id: number }>();
 
   if (existingUserByEmail) {
-    return json({ error: "This email is already registered." });
+    return json({ error: "Tento e-mail už je registrovaný." });
   }
 
   const existingUserByNickname = await context.env.DB.prepare(
@@ -51,7 +51,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   ).bind(nickname).first<{ id: number }>();
 
   if (existingUserByNickname) {
-    return json({ error: "This nickname is already taken." });
+    return json({ error: "Tato přezdívka je už obsazená." });
   }
 
   try {
@@ -72,7 +72,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
     if (!insertedUserId) {
       console.error("Signup insert succeeded but no user id was returned", { email });
-      return json({ error: "Could not create account right now." });
+      return json({ error: "Účet se teď nepodařilo vytvořit." });
     }
 
     await context.env.DB.prepare(
@@ -82,13 +82,13 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     ).bind(insertedUserId, email, passwordHash).run();
   } catch (error) {
     console.error("Signup failed", error);
-    return json({ error: "Could not create account right now." });
+    return json({ error: "Účet se teď nepodařilo vytvořit." });
   }
 
   return json(
     {
       error: null,
-      message: "Account created in unactive state."
+      message: "Účet byl vytvořen. Nyní ho aktivuj."
     }
   );
 }

@@ -13,7 +13,7 @@ interface PagesContext {
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const roundId = Number.parseInt(context.params.id, 10);
   if (!Number.isInteger(roundId) || roundId < 1) {
-    return json({ error: "Invalid round id." });
+    return json({ error: "Neplatné ID tipovačky." });
   }
 
   const round = await context.env.DB.prepare(
@@ -21,7 +21,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   ).bind(roundId).first<ResultRoundInput>();
 
   if (!round || !round.evaluated_date) {
-    return json({ error: "Round result is not available." }, 404);
+    return json({ error: "Výsledek tipovačky není k dispozici." }, 404);
   }
 
   const result = await buildRoundResult(context.env, round);
