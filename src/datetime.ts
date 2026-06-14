@@ -251,7 +251,7 @@ export function availableTimeZones(): string[] {
 
 // Current UTC offset of a time zone, e.g. "UTC+2", "UTC-5:30", "UTC".
 // Computed against the current instant so daylight saving time is reflected.
-export function timeZoneOffsetLabel(timeZone: string): string {
+function timeZoneOffsetLabel(timeZone: string): string {
   try {
     const name = new Intl.DateTimeFormat("en-US", {
       timeZone,

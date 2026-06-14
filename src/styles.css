@@ -52,24 +52,6 @@ body {
   gap: 0.5rem;
 }
 
-.user-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.user-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #17181f;
-  background: #f0c419;
-  border-radius: 999px;
-  padding: 0.05rem 0.45rem;
-}
-
 /* Ghost buttons in the dark header (light text on the dark bar). */
 .auth button.ghost {
   background: transparent;
@@ -198,14 +180,6 @@ body {
   font: inherit;
   font-size: 0.85rem;
   max-width: 16rem;
-}
-
-.app-output {
-  padding: 0.35rem 1rem;
-  font-size: 0.85rem;
-  color: #444;
-  background: #fffbe6;
-  border-bottom: 1px solid #e0d9a8;
 }
 
 .app-main {
@@ -833,16 +807,6 @@ button:disabled {
   color: #8a6608;
 }
 
-.round-status {
-  font-size: 0.85rem;
-  margin: 0 0 0.5rem;
-}
-
-.round-status.evaluated {
-  color: #1a7f37;
-  font-weight: 600;
-}
-
 .round-actions {
   display: flex;
   align-items: center;
@@ -997,12 +961,6 @@ button:disabled {
   color: #777;
 }
 
-.guess-caption {
-  font-size: 0.85rem;
-  color: #555;
-  margin: 0 0 0.75rem;
-}
-
 .no-contest {
   color: #777;
 }
@@ -1069,12 +1027,6 @@ button:disabled {
 
 .data-table tbody tr.is-me td:first-child {
   box-shadow: inset 2px 0 0 #f0c419;
-}
-
-.section-sub {
-  margin: -0.4rem 0 0.6rem;
-  font-size: 0.85rem;
-  color: #6b7280;
 }
 
 .card-caption {
