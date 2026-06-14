@@ -957,6 +957,13 @@ button.linklike:hover {
   color: #fff;
 }
 
+/* Faded placeholder badge when a link is missing (admin overview). */
+.logo-badge.missing {
+  background: #eef0f4;
+  color: #aeb4be;
+  border: 1px dashed #d4d8e0;
+}
+
 .movie-poster-empty {
   background: #eef0f4;
   border: 1px dashed #d4d8e0;

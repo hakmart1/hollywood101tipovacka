@@ -62,6 +62,9 @@ interface CodeRequest {
 interface CodesResponse {
   error: string | null;
   codes?: AdminCode[];
+  page?: number;
+  page_size?: number;
+  total?: number;
   message?: string;
 }
 
@@ -97,11 +100,14 @@ export default function AdminCodesPage({
   const { confirm, confirmElement } = useConfirm();
   const [codes, setCodes] = useState<AdminCode[] | null>(null);
   const [requests, setRequests] = useState<CodeRequest[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
-    void loadCodes();
+    void loadCodes(0);
     void loadRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -137,8 +143,8 @@ export default function AdminCodesPage({
     }
   }
 
-  async function loadCodes() {
-    const response = await fetch("/api/admin/activation-codes", {
+  async function loadCodes(nextPage: number) {
+    const response = await fetch(`/api/admin/activation-codes?page=${nextPage}`, {
       headers: { Accept: "application/json" }
     });
     const payload = (await response.json()) as CodesResponse;
@@ -150,6 +156,9 @@ export default function AdminCodesPage({
     }
 
     setCodes(payload.codes || []);
+    setPage(payload.page ?? nextPage);
+    setPageSize(payload.page_size ?? 10);
+    setTotal(payload.total ?? 0);
   }
 
   async function handleGenerate() {
@@ -160,8 +169,11 @@ export default function AdminCodesPage({
         headers: { Accept: "application/json" }
       });
       const payload = (await response.json()) as CodesResponse;
-      onMessage(payload.error || payload.message || "Hotovo.");
-      await loadCodes();
+      if (payload.error) {
+        onMessage(payload.error);
+      }
+      // New code is at the top — jump to the first page to reveal it.
+      await loadCodes(0);
     } finally {
       setBusy(false);
     }
@@ -182,7 +194,7 @@ export default function AdminCodesPage({
       if (payload.error) {
         onMessage(payload.error);
       }
-      await loadCodes();
+      await loadCodes(page);
     } finally {
       setBusy(false);
     }
@@ -221,7 +233,7 @@ export default function AdminCodesPage({
       });
       const payload = (await response.json()) as CodesResponse;
       onMessage(payload.error || payload.message || "Hotovo.");
-      await loadCodes();
+      await loadCodes(page);
     } finally {
       setBusy(false);
     }
@@ -318,6 +330,23 @@ export default function AdminCodesPage({
             ))}
           </tbody>
         </table>
+        {total > pageSize ? (
+          <div className="pager">
+            <button type="button" disabled={page <= 0} onClick={() => void loadCodes(page - 1)}>
+              ← Předchozí
+            </button>
+            <span className="pager-info">
+              Stránka {page + 1} / {Math.ceil(total / pageSize)}
+            </span>
+            <button
+              type="button"
+              disabled={page >= Math.ceil(total / pageSize) - 1}
+              onClick={() => void loadCodes(page + 1)}
+            >
+              Další →
+            </button>
+          </div>
+        ) : null}
         </div>
       )}
       {confirmElement}

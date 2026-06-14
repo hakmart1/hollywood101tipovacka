@@ -15,6 +15,9 @@ interface HistoryRound {
 interface HistoryResponse {
   error: string | null;
   rounds?: HistoryRound[];
+  page?: number;
+  page_size?: number;
+  total?: number;
 }
 
 interface DetailResponse {
@@ -31,14 +34,17 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
   const [rounds, setRounds] = useState<HistoryRound[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [detail, setDetail] = useState<RoundResult | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    void loadHistory();
+    void loadHistory(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadHistory() {
-    const response = await fetch("/api/results/history", {
+  async function loadHistory(nextPage: number) {
+    const response = await fetch(`/api/results/history?page=${nextPage}`, {
       headers: { Accept: "application/json" }
     });
     const payload = (await response.json()) as HistoryResponse;
@@ -50,6 +56,11 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
     }
 
     setRounds(payload.rounds || []);
+    setOpenId(null);
+    setDetail(null);
+    setPage(payload.page ?? nextPage);
+    setPageSize(payload.page_size ?? 10);
+    setTotal(payload.total ?? 0);
   }
 
   async function toggle(round: HistoryRound) {
@@ -107,6 +118,23 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
           ))}
         </ul>
       )}
+      {total > pageSize ? (
+        <div className="pager">
+          <button type="button" disabled={page <= 0} onClick={() => void loadHistory(page - 1)}>
+            ← Předchozí
+          </button>
+          <span className="pager-info">
+            Stránka {page + 1} / {Math.ceil(total / pageSize)}
+          </span>
+          <button
+            type="button"
+            disabled={page >= Math.ceil(total / pageSize) - 1}
+            onClick={() => void loadHistory(page + 1)}
+          >
+            Další →
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

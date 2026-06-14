@@ -37,6 +37,9 @@ interface Round {
 interface RoundsResponse {
   error: string | null;
   rounds?: Round[];
+  page?: number;
+  page_size?: number;
+  total?: number;
   message?: string;
 }
 
@@ -89,6 +92,9 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   >({});
   // datetime-local draft per round while picking a scheduled-evaluation time.
   const [scheduleEdits, setScheduleEdits] = useState<Record<number, string>>({});
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
 
   // Prefill the title as "YYYY Week WW" from the start date, unless the admin
@@ -107,12 +113,12 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   }
 
   useEffect(() => {
-    void loadRounds();
+    void loadRounds(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadRounds() {
-    const response = await fetch("/api/admin/rounds", {
+  async function loadRounds(nextPage: number) {
+    const response = await fetch(`/api/admin/rounds?page=${nextPage}`, {
       headers: { Accept: "application/json" }
     });
     const payload = (await response.json()) as RoundsResponse;
@@ -125,9 +131,10 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
 
     const list = payload.rounds || [];
     setRounds(list);
-    // Unevaluated rounds start expanded so they stand out. On the first load that
-    // means all of them; on later loads only newly appeared ones (e.g. a just-
-    // created contest) — rounds the admin already collapsed stay collapsed.
+    // Unevaluated rounds start expanded so they stand out — but only the first
+    // time we see them (a just-created one, or a page visited for the first
+    // time). Rounds the admin collapsed stay collapsed; seenIds accumulates
+    // across pages so navigating back doesn't re-expand them.
     setOpenIds((current) => {
       const next = new Set(current ?? []);
       for (const round of list) {
@@ -137,7 +144,12 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       }
       return next;
     });
-    seenIds.current = new Set(list.map((round) => round.id));
+    for (const round of list) {
+      seenIds.current.add(round.id);
+    }
+    setPage(payload.page ?? nextPage);
+    setPageSize(payload.page_size ?? 10);
+    setTotal(payload.total ?? 0);
   }
 
   async function handleDeleteContest(round: Round) {
@@ -160,7 +172,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       const payload = (await response.json()) as RoundsResponse;
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -217,7 +229,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelEditDates(round.id);
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -243,7 +255,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       const payload = (await response.json()) as RoundsResponse;
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -284,7 +296,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelScheduleEdit(round.id);
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -302,7 +314,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       const payload = (await response.json()) as RoundsResponse;
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -343,7 +355,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
         setMovieRows([emptyMovieRow]);
         setAutoTitle("");
         setFormOpen(false);
-        await loadRounds();
+        await loadRounds(0);
       }
     } finally {
       setBusy(false);
@@ -453,7 +465,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       onMessage(payload.error || payload.message || "Hotovo.");
       if (!payload.error) {
         cancelEditMovie(movie.id);
-        await loadRounds();
+        await loadRounds(page);
       }
     } finally {
       setBusy(false);
@@ -889,7 +901,13 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                                 />
                               </a>
                             )
-                          ) : null}
+                          ) : (
+                            <span
+                              className="movie-poster-mini movie-poster-empty"
+                              title="Plakát chybí"
+                              aria-label="Plakát chybí"
+                            />
+                          )}
                           {movie.imdb_url ? (
                             <a
                               href={movie.imdb_url}
@@ -899,7 +917,11 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                             >
                               IMDb
                             </a>
-                          ) : null}
+                          ) : (
+                            <span className="logo-badge missing" title="Odkaz IMDb chybí">
+                              IMDb
+                            </span>
+                          )}
                           {movie.csfd_url ? (
                             <a
                               href={movie.csfd_url}
@@ -909,7 +931,11 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
                             >
                               ČSFD
                             </a>
-                          ) : null}
+                          ) : (
+                            <span className="logo-badge missing" title="Odkaz ČSFD chybí">
+                              ČSFD
+                            </span>
+                          )}
                         </div>
                       )}
                     </td>
@@ -965,6 +991,24 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
           );
         })
       )}
+
+      {total > pageSize ? (
+        <div className="pager">
+          <button type="button" disabled={page <= 0} onClick={() => void loadRounds(page - 1)}>
+            ← Předchozí
+          </button>
+          <span className="pager-info">
+            Stránka {page + 1} / {Math.ceil(total / pageSize)}
+          </span>
+          <button
+            type="button"
+            disabled={page >= Math.ceil(total / pageSize) - 1}
+            onClick={() => void loadRounds(page + 1)}
+          >
+            Další →
+          </button>
+        </div>
+      ) : null}
       {confirmElement}
     </section>
   );

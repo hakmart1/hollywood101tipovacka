@@ -28,11 +28,21 @@ function normalizeUrl(value: unknown): string | null {
   return `https://${url}`;
 }
 
+const PAGE_SIZE = 10;
+
 export async function onRequestGet(context: PagesContext): Promise<Response> {
   const admin = await requireAdmin(context.request, context.env);
   if (!admin) {
     return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
+
+  const url = new URL(context.request.url);
+  const page = Math.max(0, Number.parseInt(url.searchParams.get("page") || "0", 10) || 0);
+
+  const totalRow = await context.env.DB.prepare(
+    "SELECT COUNT(*) AS total FROM rounds"
+  ).first<{ total: number }>();
+  const total = totalRow?.total ?? 0;
 
   const rounds = await context.env.DB.prepare(
     `SELECT
@@ -46,18 +56,23 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
         rounds.scheduled_evaluation_date,
         (SELECT COUNT(*) FROM guesses WHERE guesses.round_id = rounds.id) AS guess_count
       FROM rounds
-      ORDER BY rounds.date_to DESC, rounds.id DESC`
-  ).all<AdminRoundRecord>();
-
-  const movies = await context.env.DB.prepare(
-    "SELECT id, round_id, movie_title, poster_url, csfd_url, imdb_url, actual_revenue FROM movies ORDER BY id"
-  ).all<MovieRecord>();
+      ORDER BY rounds.date_to DESC, rounds.id DESC
+      LIMIT ?1 OFFSET ?2`
+  ).bind(PAGE_SIZE, page * PAGE_SIZE).all<AdminRoundRecord>();
 
   const moviesByRound = new Map<number, MovieRecord[]>();
-  for (const movie of movies.results) {
-    const list = moviesByRound.get(movie.round_id) || [];
-    list.push(movie);
-    moviesByRound.set(movie.round_id, list);
+  const roundIds = rounds.results.map((round) => round.id);
+  if (roundIds.length > 0) {
+    const placeholders = roundIds.map((_, index) => `?${index + 1}`).join(", ");
+    const movies = await context.env.DB.prepare(
+      `SELECT id, round_id, movie_title, poster_url, csfd_url, imdb_url, actual_revenue
+         FROM movies WHERE round_id IN (${placeholders}) ORDER BY id`
+    ).bind(...roundIds).all<MovieRecord>();
+    for (const movie of movies.results) {
+      const list = moviesByRound.get(movie.round_id) || [];
+      list.push(movie);
+      moviesByRound.set(movie.round_id, list);
+    }
   }
 
   return json({
@@ -65,7 +80,10 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     rounds: rounds.results.map((round) => ({
       ...round,
       movies: moviesByRound.get(round.id) || []
-    }))
+    })),
+    page,
+    page_size: PAGE_SIZE,
+    total
   });
 }
 

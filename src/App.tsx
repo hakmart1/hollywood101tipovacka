@@ -308,7 +308,6 @@ export default function App() {
       return;
     }
 
-    setOutput(payload.message || "Přihlášení proběhlo úspěšně.");
     setLoginOpen(false);
     setLoginForm(defaultLoginForm);
     await refreshSession();
@@ -355,7 +354,6 @@ export default function App() {
       return;
     }
 
-    setOutput(payload.message || "Účet aktivován.");
     setActivateOpen(false);
     setActivationCode("");
     await refreshSession();
@@ -390,7 +388,9 @@ export default function App() {
   async function handleLogout() {
     const response = await fetch("/api/auth/logout", { method: "POST" });
     const payload = (await response.json()) as LogoutResponse;
-    setOutput(payload.error || payload.message || "Odhlášeno.");
+    if (payload.error) {
+      setOutput(payload.error);
+    }
     window.location.hash = "#/";
     await refreshSession();
   }
