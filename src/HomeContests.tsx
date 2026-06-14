@@ -199,26 +199,6 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
     <section className="home-contests">
       <h2>Aktivní tipovačky</h2>
 
-      {upcoming.length > 0 ? (
-        <div className="upcoming-contests">
-          {upcoming.map((contest) => {
-            const startMs = new Date(contest.date_from).getTime();
-            return (
-              <div className="upcoming-item" key={contest.id}>
-                <span className="upcoming-title">
-                  {contest.type === "bonus" ? "[Bonus] " : ""}
-                  {contest.title}
-                </span>
-                <span className="upcoming-countdown">
-                  začíná za <span className="eval-clock">{formatCountdown(startMs - nowMs)}</span>{" "}
-                  ({formatDateTime(contest.date_from)})
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-
       {sorted.length === 0 ? <p className="no-contest">Žádná aktivní tipovačka.</p> : null}
       {sorted.map((contest) => {
         const closed = new Date(contest.date_to).getTime() < nowMs;
@@ -323,6 +303,26 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
         </section>
         );
       })}
+
+      {upcoming.length > 0 ? (
+        <div className="upcoming-contests">
+          {upcoming.map((contest) => {
+            const startMs = new Date(contest.date_from).getTime();
+            return (
+              <div className="upcoming-item" key={contest.id}>
+                <span className="upcoming-title">
+                  {contest.type === "bonus" ? "[Bonus] " : ""}
+                  {contest.title}
+                </span>
+                <span className="upcoming-countdown">
+                  začíná za <span className="eval-clock">{formatCountdown(startMs - nowMs)}</span>{" "}
+                  ({formatDateTime(contest.date_from)})
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }

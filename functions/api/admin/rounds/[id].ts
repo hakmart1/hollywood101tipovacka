@@ -81,11 +81,11 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
   }
 
   if (!DATETIME_REGEX.test(dateFrom) || !DATETIME_REGEX.test(dateTo)) {
-    return json({ error: "Start and end date-times are required." });
+    return json({ error: "Vyplňte začátek i konec tipovačky." });
   }
 
   if (dateFrom > dateTo) {
-    return json({ error: "The start must not be after the end." });
+    return json({ error: "Začátek nesmí být po konci." });
   }
 
   const result = await context.env.DB.prepare(

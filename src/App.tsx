@@ -143,7 +143,7 @@ export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [, setOutput] = useState("");
+  const [output, setOutput] = useState("");
   const [signupOpen, setSignupOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [activateOpen, setActivateOpen] = useState(false);
@@ -156,6 +156,15 @@ export default function App() {
   useEffect(() => {
     void refreshSession();
   }, []);
+
+  // Auto-dismiss the toast notification after a few seconds.
+  useEffect(() => {
+    if (!output) {
+      return;
+    }
+    const timer = setTimeout(() => setOutput(""), 5000);
+    return () => clearTimeout(timer);
+  }, [output]);
 
   // Count of users waiting for an activation code — drives the red badge next to
   // "Administrace". Re-checked on navigation so it stays reasonably fresh.
@@ -677,6 +686,12 @@ export default function App() {
             </div>
           </form>
         </Modal>
+      ) : null}
+
+      {output ? (
+        <div className="app-toast" role="status" onClick={() => setOutput("")}>
+          {output}
+        </div>
       ) : null}
     </>
   );

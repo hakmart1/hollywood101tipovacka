@@ -88,15 +88,15 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
   const description = String(payload.description || "").trim() || null;
 
   if (!title) {
-    return json({ error: "Round title is required." });
+    return json({ error: "Název tipovačky je povinný." });
   }
 
   if (!DATETIME_REGEX.test(dateFrom) || !DATETIME_REGEX.test(dateTo)) {
-    return json({ error: "Start and end date-times are required." });
+    return json({ error: "Vyplňte začátek i konec tipovačky." });
   }
 
   if (dateFrom > dateTo) {
-    return json({ error: "The start must not be after the end." });
+    return json({ error: "Začátek nesmí být po konci." });
   }
 
   const type = payload.type === "bonus" ? "bonus" : "standard";
@@ -112,7 +112,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     .filter((movie) => movie.movie_title.length > 0);
 
   if (movies.length === 0) {
-    return json({ error: "Add at least one movie with a title." });
+    return json({ error: "Přidejte alespoň jeden film s názvem." });
   }
 
   try {

@@ -189,7 +189,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
   async function saveDates(round: Round) {
     const edit = dateEdits[round.id];
     if (!edit || !edit.from || !edit.to) {
-      onMessage("Both start and end date-times are required.");
+      onMessage("Vyplňte začátek i konec tipovačky.");
       return;
     }
     if (!edit.title.trim()) {
