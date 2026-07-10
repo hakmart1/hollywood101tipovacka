@@ -1,129 +1,146 @@
-# Hollywood 101 Tipovacka
+# Hollywood 101 Tipovačka
 
-Small Cloudflare app for a movie box office guessing game.
+A small Czech movie box-office guessing game. Players guess the opening box-office
+revenue of the movies in a weekly *contest* (a "round"), earn a play-money currency
+called **ImfCoins** based on how close their guesses are, and compete on a leaderboard.
+The UI is in Czech.
 
-## Phase 1: D1 database
+## Stack
 
-This repository currently contains the D1 migration only.
+Runs entirely on Cloudflare's free tier:
 
-- `users`: players and admins, including activation state and current `ImfCoins` balance
-- `activation_codes`: pre-generated activation codes that are assigned to users when consumed
-- `user_auth_identities`: auth providers per user so local login can later grow into Google or Facebook
-- `imf_coin_history`: full history of every `ImfCoins` change
-- `rounds`: admin-controlled round windows, each linked to a season key
-- `round_movies`: the movies configured for each round, typically five rows per round
-- `faq_entries`: static FAQ content editable by admin users
-- `settings`: global app settings managed from admin, starting with the current season name
+- **Frontend** — React 18 + TypeScript, built with Vite. Single-page app with hash
+  routing (see `readRoute()` in `src/App.tsx`). Output goes to `dist/`.
+- **Backend API** — Cloudflare **Pages Functions** under `functions/api/**`. File-based
+  routing: `functions/api/foo/bar.ts` → `/api/foo/bar`. Shared helpers live in
+  `functions/_lib/`.
+- **Database** — Cloudflare **D1** (SQLite). Binding name `DB`, configured in
+  `wrangler.toml`.
+- **Cron worker** — a separate Worker in `worker/` that auto-evaluates contests when
+  their scheduled evaluation time arrives (runs every 5 minutes). Deployed
+  independently but bound to the **same** D1 database, and reuses the Pages app's
+  evaluation logic (`functions/_lib/evaluate.ts`).
 
-## Cloudflare D1 setup
+## Project layout
 
-1. Install Wrangler if needed:
-
-```bash
-npm install -D wrangler
+```
+src/                      React SPA (pages, components, styles)
+functions/
+  _lib/                   Shared backend helpers (auth, session, email, scoring, evaluate, ...)
+  api/                    Pages Functions endpoints (file-based routing)
+db/migrations/            D1 migrations (forward-only)
+worker/                   Standalone cron worker (its own wrangler.toml)
+wrangler.toml             Pages project config + D1 binding
 ```
 
-2. Log in to Cloudflare:
+### Domain terminology
+
+- A **round** (DB table `rounds`, admin UI) is a **contest** ("tipovačka") in the
+  public API (`/api/contests`). Same thing, two names.
+- Each round has several **movies**; players place **guesses** on each movie's revenue.
+- `imf_coin_history` is the append-only ledger of every ImfCoins change; a user's
+  balance is `users.imf_coins_balance`, and `rank`/`previous_rank`/`rank_balance` are
+  frozen at evaluation for the leaderboard.
+
+## Database
+
+Tables (see `db/migrations/0001_initial_schema.sql`): `users`, `user_auth_identities`,
+`activation_codes`, `rounds`, `movies`, `guesses`, `imf_coin_history`, `faq_entries`.
+(`faq_entries` exists but is currently unused by the UI.)
+
+Migrations are **forward-only** and tracked in the `d1_migrations` table inside the
+database (Wrangler tracks by file name, not content).
 
 ```bash
-npx wrangler login
+# create a new migration
+npx wrangler d1 migrations create hollywood101tipovacka <name>
+
+# apply locally / to production
+npx wrangler d1 migrations apply hollywood101tipovacka --local
+npx wrangler d1 migrations apply hollywood101tipovacka --remote
+
+# inspect production
+npx wrangler d1 execute hollywood101tipovacka --remote --command "SELECT name FROM sqlite_master WHERE type='table';"
 ```
 
-3. Create the D1 database:
+`0001_initial_schema.sql` is a consolidated baseline (the original 0001–0020 history was
+squashed). **Do not edit an applied migration** — add a new `000N_*.sql` file instead.
+Never put `DROP TABLE` at the top of a migration (D1 runs migrations in a transaction
+where `PRAGMA foreign_keys=OFF` is ignored, so a drop can cascade).
+
+## Local development
 
 ```bash
-npx wrangler d1 create hollywood101-tipovacka-db
+yarn install
+
+# terminal 1 — Pages Functions backend + local D1 on :8788
+yarn dev:api           # wrangler pages dev dist (needs `yarn build` once first)
+
+# terminal 2 — Vite dev server with HMR, proxies /api to :8788
+yarn dev
 ```
 
-4. Copy the returned `database_id` into `wrangler.toml`.
+Create a local D1 copy with `npx wrangler d1 migrations apply hollywood101tipovacka --local`.
+`yarn dev:api` injects a throwaway `SESSION_SECRET=local-dev-secret`.
 
-5. Apply the initial migration to your remote Cloudflare database:
+Type-check and build:
 
 ```bash
-npx wrangler d1 migrations apply hollywood101-tipovacka-db --remote
+npx tsc --noEmit -p tsconfig.json
+yarn build
 ```
 
-6. Optional: inspect the remote database:
+## Deployment
+
+The Pages project is **git-connected**: pushing to `main` triggers an automatic build
+and deploy (build command `yarn build`, output `dist`). No manual deploy step for the
+web app.
+
+The cron worker is **not** part of the Pages deploy — deploy it separately whenever
+`worker/` or its shared deps change:
 
 ```bash
-npx wrangler d1 execute hollywood101-tipovacka-db --remote --command "SELECT name FROM sqlite_master WHERE type = 'table';"
+npx wrangler deploy --config worker/wrangler.toml
 ```
 
-## Local development DB
+Both `wrangler.toml` and `worker/wrangler.toml` must reference the same D1
+`database_id`.
 
-If you want a local D1 copy for testing:
+## Secrets / environment
+
+Set as Pages secrets (never commit them):
+
+| Name | Purpose |
+|------|---------|
+| `SESSION_SECRET` | HMAC key that signs the session cookie and password-reset tokens |
+| `MAILJET_API_KEY` / `MAILJET_SECRET_KEY` | Mailjet transactional email credentials |
+| `EMAIL_FROM` | Optional sender override; defaults to the address in `functions/_lib/email.ts` |
 
 ```bash
-npx wrangler d1 migrations apply hollywood101-tipovacka-db --local
+npx wrangler pages secret put SESSION_SECRET --project-name hollywood101tipovacka
 ```
 
-## Current structure
+## Auth & email
 
-- `wrangler.toml`: Cloudflare D1 binding config
-- `db/migrations/0001_initial.sql`: first D1 schema migration
+- Email/password accounts. Passwords hashed with PBKDF2-SHA256 (100k iterations) —
+  see `functions/_lib/auth.ts`.
+- Sign-up creates a `pending_activation` user; the user activates with a pre-generated
+  **activation code** (admin-managed), then logs in.
+- Sessions are a signed cookie (`tipovacka_session`), stateless HMAC over
+  `{userId, exp}`.
+- Password reset uses a **stateless** HMAC token over `userId.exp.passwordHash` (no DB
+  table; self-invalidates when the password changes or after 1 hour).
+- Transactional email goes through **Mailjet** (Send API v3.1, single verified sender —
+  no domain required). `sendEmail()` no-ops when the Mailjet keys are absent (e.g. local
+  dev). See `functions/_lib/email.ts`.
 
-## Updating tables later
+## API routes (overview)
 
-Do not put `DROP TABLE` statements at the top of the initial migration.
-
-Use a new migration file every time the schema changes, for example:
-
-```bash
-npx wrangler d1 migrations create hollywood101-tipovacka-db add-guesses-table
-```
-
-Then edit the new SQL file and apply it:
-
-```bash
-npx wrangler d1 migrations apply hollywood101-tipovacka-db --remote
-```
-
-Recommended rule:
-
-- keep `0001_initial.sql` as the original starting point
-- create `0002_*`, `0003_*`, and so on for later changes
-- use `ALTER TABLE` or copy-data migrations instead of dropping everything
-
-For local-only resets, it is fine to recreate the local database from scratch. For the remote Cloudflare database, prefer forward-only migrations.
-
-## Email activation auth
-
-This repo now includes:
-
-- `src/App.tsx`: a basic React landing page with sign-up and login forms
-- `functions/api/auth/signup.ts`: creates a pending account with local email/password auth
-- `functions/api/auth/activate.ts`: consumes a stored activation code and unlocks the account
-- `functions/api/auth/login.ts`: verifies email/password and sets a signed session cookie
-- `functions/api/me.ts`: returns the signed-in user from the session cookie
-- `functions/api/logout.ts`: clears the session cookie
-
-### Current routes
-
-- `POST /api/auth/signup`
-- `POST /api/auth/activate`
-- `POST /api/auth/login`
-- `GET /api/me`
-- `POST /api/logout`
-
-### Required Pages secret
-
-The email-first flow currently needs only one secret:
-
-```bash
-yarn wrangler pages secret put SESSION_SECRET --project-name hollywood101tipovacka
-```
-
-`SESSION_SECRET` signs the login cookie after a successful login.
-
-### Current activation flow
-
-1. User signs up with nickname, email, and password.
-2. Backend creates a `pending_activation` user only.
-3. User enters the activation code.
-4. Backend finds a pre-generated activation code stored in D1, assigns it to that user, and marks the user as `active`.
-5. User logs in with email and password.
-6. Backend sets a signed session cookie.
-
-### Real email delivery later
-
-The activation flow is ready for a real email sender, but this repo does not yet send emails through a provider. The next step can be wiring `signup` to Resend, MailChannels, or another email service.
+- Auth: `POST /api/auth/{signup,activate,login,logout,forgot-password,reset-password,change-password,request-code}`
+- Session: `GET /api/me`, `DELETE /api/account/delete`
+- Contests: `GET /api/contests`, `POST /api/contests/guess`
+- Results: `GET /api/results`, `GET /api/results/history`, `GET /api/results/:id`
+- Coins: `GET /api/coins/history`, `POST /api/coins/request`
+- Admin: `/api/admin/rounds`, `/api/admin/rounds/:id`, `/api/admin/movies/:id`,
+  `/api/admin/activation-codes`, `/api/admin/activation-codes/:id`,
+  `/api/admin/code-requests`, `/api/admin/code-requests/:id`
