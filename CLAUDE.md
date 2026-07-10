@@ -71,11 +71,17 @@ manage them.
 
 ## Current in-progress work (as of 2026-07-10)
 
-- **Custom domain `tipovacka.hollywood101.cz`** added to the Pages project (status
-  pending). Needs a CNAME `tipovacka → hollywood101tipovacka.pages.dev` at Forpsi, then
-  Cloudflare validates and issues SSL.
+- **Custom domain `tipovacka.hollywood101.cz`** — **live.** CNAME
+  `tipovacka → hollywood101tipovacka.pages.dev` is set at Forpsi, Cloudflare validated it
+  and issued SSL. Both this and `hollywood101tipovacka.pages.dev` serve the app (no
+  redirect between them). Note: Forpsi has a wildcard `*.hollywood101.cz` → apex, so any
+  new subdomain needs an explicit record to override it.
 - **Domain email sender `tipovacka@hollywood101.cz`** registered in Mailjet (Inactive,
-  pending DNS). Once the ownership TXT + SPF + DKIM records are live at Forpsi and the
-  Mailjet domain goes Active, switch `DEFAULT_SENDER` to it and add
-  `Reply-To: hollywood101tipovacka@gmail.com` (keeps replies flowing to a real inbox,
-  since the domain has no mailbox/MX). Until then, email stays on the gmail sender.
+  pending DNS). The web CNAME is in, but the three email TXT records are **not yet added**
+  at Forpsi: ownership token (`mailjet._<token>`), SPF (`@` =
+  `v=spf1 include:spf.mailjet.com ?all`), and DKIM (`mailjet._domainkey`). Fetch the
+  current values from the Mailjet API (`GET /v3/REST/dns/hollywood101.cz`). Once they are
+  live and the Mailjet domain goes Active, switch `DEFAULT_SENDER` in
+  `functions/_lib/email.ts` to it and add `Reply-To: hollywood101tipovacka@gmail.com`
+  (keeps replies flowing to a real inbox, since the domain has no mailbox/MX). Until then,
+  email stays on the gmail sender.

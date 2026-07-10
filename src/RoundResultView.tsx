@@ -78,6 +78,7 @@ export default function RoundResultView({
         <span className="round-dates">(vyhodnoceno {formatDateTime(result.evaluated_date)})</span>
       </h3>
 
+      <div className="table-scroll">
       <table className="data-table">
         <thead>
           <tr>
@@ -105,11 +106,13 @@ export default function RoundResultView({
           })}
         </tbody>
       </table>
+      </div>
 
       <h4>Celkové pořadí</h4>
       {result.standings.length === 0 ? (
         <p className="guess-hint">Žádní způsobilí hráči (nikdo netipnul všechny filmy).</p>
       ) : (
+        <div className="table-scroll">
         <table className="data-table">
           <thead>
             <tr>
@@ -136,6 +139,7 @@ export default function RoundResultView({
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <h4>Vyhodnocení filmů</h4>
@@ -149,6 +153,7 @@ export default function RoundResultView({
           {movie.standings.length === 0 ? (
             <p className="guess-hint">Žádné tipy.</p>
           ) : (
+            <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
@@ -183,6 +188,7 @@ export default function RoundResultView({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       ))}

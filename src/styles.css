@@ -1255,3 +1255,53 @@ button.linklike:hover {
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* Wide result tables scroll horizontally inside their card instead of being
+   clipped off the right edge of narrow (mobile) screens. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Keep numbers on a single line in the result tables so a value like "55,0 M"
+   never wraps; the first two columns (rank/name) may still wrap. */
+.round-card .data-table th,
+.round-card .data-table td {
+  white-space: nowrap;
+}
+.round-card .data-table th:first-child,
+.round-card .data-table td:first-child,
+.round-card .data-table th:nth-child(2),
+.round-card .data-table td:nth-child(2) {
+  white-space: normal;
+}
+
+/* Mobile: tighten cards and tables so more fits before scrolling kicks in. */
+@media (max-width: 640px) {
+  .card,
+  .user-card,
+  .round-card,
+  .contest-form,
+  .coin-history {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .data-table {
+    font-size: 0.82rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .data-table th {
+    font-size: 0.68rem;
+  }
+
+  /* Put the coins breakdown "(160,000 + 35,000)" on its own line to keep the
+     column narrow. */
+  .coins-breakdown {
+    display: block;
+  }
+}
