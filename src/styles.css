@@ -1337,6 +1337,12 @@ button.linklike:hover {
   margin: 0.5rem 0 0;
 }
 
+.reward-calc-effective {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .calc-ok {
   color: #1a8a4a;
   font-weight: 600;

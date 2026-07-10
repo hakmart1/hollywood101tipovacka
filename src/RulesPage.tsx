@@ -7,6 +7,17 @@ function formatCoins(amount: number): string {
   return `${amount < 0 ? "−" : ""}${Math.abs(amount).toLocaleString("cs-CZ")}`;
 }
 
+function formatMillions1(millions: number): string {
+  return millions.toLocaleString("cs-CZ", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+// Guesses and actual results are stored to 1 decimal place in millions (step
+// 0.1 M = 100,000 $) — see functions/api/contests/guess.ts. Round inputs the
+// same way so the calculator can't show a payout the real game never produces.
+function roundToStep(millions: number): number {
+  return Math.round(millions * 10) / 10;
+}
+
 function parseMillions(value: string): number | null {
   const normalized = value.replace(",", ".").trim();
   if (normalized === "") {
@@ -32,9 +43,11 @@ function RewardCalculator() {
 
   const guessM = parseMillions(guess);
   const actualM = parseMillions(actual);
-  const ready = guessM !== null && actualM !== null && actualM > 0;
+  const guessR = guessM === null ? null : roundToStep(guessM);
+  const actualR = actualM === null ? null : roundToStep(actualM);
+  const ready = guessR !== null && actualR !== null && actualR > 0;
 
-  const error = ready ? guessError(guessM, actualM) : 0;
+  const error = ready ? guessError(guessR, actualR) : 0;
   const qualifies = ready && error <= QUALIFY_MARGIN;
   const reward = ready ? accuracyReward(error) : 0;
   const net = reward - GUESS_COST;
@@ -68,6 +81,10 @@ function RewardCalculator() {
 
       {ready ? (
         <div className="reward-calc-result">
+          <p className="reward-calc-effective">
+            Počítáno s tipem <strong>{formatMillions1(guessR!)} M</strong> a výsledkem{" "}
+            <strong>{formatMillions1(actualR!)} M</strong> (zaokrouhleno na 0,1 M, jako v tipovačce).
+          </p>
           <div className="reward-calc-row">
             <span>Odchylka</span>
             <strong>
