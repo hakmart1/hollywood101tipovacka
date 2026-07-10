@@ -10,7 +10,7 @@ compatibility_date = "2026-06-02"
 [[d1_databases]]
 binding = "DB"
 database_name = "hollywood101tipovacka"
-database_id = "3ae4f86e-9388-4224-8df6-54c6dc12399b"
+database_id = "b1d3354f-a67a-4a08-b746-6b46536b5222"
 
 [triggers]
 crons = ["*/5 * * * *"]
