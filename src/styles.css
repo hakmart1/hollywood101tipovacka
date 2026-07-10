@@ -1305,3 +1305,44 @@ button.linklike:hover {
     display: block;
   }
 }
+
+/* Reward calculator on the rules page. */
+.reward-calc {
+  margin: 0.75rem 0 1.25rem;
+}
+
+.reward-calc-result {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: #f7f8fa;
+  border: 1px solid #e4e6eb;
+  border-radius: 8px;
+}
+
+.reward-calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.3rem 0;
+}
+
+.reward-calc-net {
+  border-top: 1px solid #e4e6eb;
+  margin-top: 0.2rem;
+  padding-top: 0.55rem;
+}
+
+.reward-calc-result .rules-note {
+  margin: 0.5rem 0 0;
+}
+
+.calc-ok {
+  color: #1a8a4a;
+  font-weight: 600;
+}
+
+.calc-bad {
+  color: #c0392b;
+  font-weight: 600;
+}

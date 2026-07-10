@@ -1,3 +1,108 @@
+import { useState } from "react";
+import { BASE_REWARD, PRECISION_REWARD, QUALIFY_MARGIN, guessError } from "../functions/_lib/scoring";
+
+const GUESS_COST = 100_000;
+
+function formatCoins(amount: number): string {
+  return `${amount < 0 ? "−" : ""}${Math.abs(amount).toLocaleString("cs-CZ")}`;
+}
+
+function parseMillions(value: string): number | null {
+  const normalized = value.replace(",", ".").trim();
+  if (normalized === "") {
+    return null;
+  }
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Accuracy reward for a single guess vs. the actual result — the self-contained
+// part of the payout. Mirrors the formula in functions/_lib/scoring.ts.
+function accuracyReward(error: number): number {
+  if (error > QUALIFY_MARGIN) {
+    return 0;
+  }
+  const scale = Math.max(0, Math.min(1, (QUALIFY_MARGIN - error) / QUALIFY_MARGIN));
+  return BASE_REWARD + Math.round(PRECISION_REWARD * scale);
+}
+
+function RewardCalculator() {
+  const [guess, setGuess] = useState("");
+  const [actual, setActual] = useState("");
+
+  const guessM = parseMillions(guess);
+  const actualM = parseMillions(actual);
+  const ready = guessM !== null && actualM !== null && actualM > 0;
+
+  const error = ready ? guessError(guessM, actualM) : 0;
+  const qualifies = ready && error <= QUALIFY_MARGIN;
+  const reward = ready ? accuracyReward(error) : 0;
+  const net = reward - GUESS_COST;
+
+  return (
+    <div className="reward-calc">
+      <div className="form-row">
+        <div className="form-field">
+          <label htmlFor="calc-guess">Tvůj tip (v milionech)</label>
+          <input
+            id="calc-guess"
+            type="text"
+            inputMode="decimal"
+            placeholder="např. 55"
+            value={guess}
+            onChange={(event) => setGuess(event.target.value)}
+          />
+        </div>
+        <div className="form-field">
+          <label htmlFor="calc-actual">Skutečný výsledek (v milionech)</label>
+          <input
+            id="calc-actual"
+            type="text"
+            inputMode="decimal"
+            placeholder="např. 50"
+            value={actual}
+            onChange={(event) => setActual(event.target.value)}
+          />
+        </div>
+      </div>
+
+      {ready ? (
+        <div className="reward-calc-result">
+          <div className="reward-calc-row">
+            <span>Odchylka</span>
+            <strong>
+              {(error * 100).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %{" "}
+              <span className={qualifies ? "calc-ok" : "calc-bad"}>
+                ({qualifies ? "v rozmezí ±25 %" : "mimo ±25 %"})
+              </span>
+            </strong>
+          </div>
+          <div className="reward-calc-row">
+            <span>Odměna za přesnost</span>
+            <strong className={reward > 0 ? "amount-plus" : undefined}>
+              {reward > 0 ? "+" : ""}
+              {formatCoins(reward)} Imfcoinů
+            </strong>
+          </div>
+          <div className="reward-calc-row reward-calc-net">
+            <span>Čistý výsledek (po odečtení vkladu {formatCoins(GUESS_COST)})</span>
+            <strong className={net > 0 ? "amount-plus" : net < 0 ? "calc-bad" : undefined}>
+              {net > 0 ? "+" : ""}
+              {formatCoins(net)} Imfcoinů
+            </strong>
+          </div>
+          <p className="rules-note">
+            Toto je jen odměna za přesnost. K ní se ještě mohou přičíst bonusy za umístění (za film
+            i za celou tipovačku), které závisí na tom, jak si vedou ostatní hráči.
+          </p>
+        </div>
+      ) : (
+        <p className="guess-hint">Zadej svůj tip a skutečný výsledek a uvidíš orientační odměnu.</p>
+      )}
+    </div>
+  );
+}
+
 export default function RulesPage() {
   return (
     <section className="rules-page">
@@ -29,6 +134,10 @@ export default function RulesPage() {
           mimo ±25 % nezískají nic.
         </li>
       </ul>
+
+      <h3>Vyzkoušej si odměnu</h3>
+      <p>Spočítej si, kolik by vynesl konkrétní tip oproti skutečnému výsledku:</p>
+      <RewardCalculator />
 
       <h3>Bonusy za umístění (za film)</h3>
       <p>Nad rámec odměny za přesnost získají nejbližší tipy u každého filmu navíc:</p>
