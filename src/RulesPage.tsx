@@ -115,18 +115,13 @@ export default function RulesPage() {
       <h3>Odměna za přesnost (za tip)</h3>
       <ul>
         <li>
-          Za každý tip můžete získat <strong>0 až 200 000</strong> Imfcoinů podle toho, jak blízko
-          jste skutečnému výsledku. Odměna klesá <strong>lineárně</strong> — dokonalý tip získá plnou
-          částku a na <strong>±40 %</strong> odchylky je nulová.
+          Za každý tip získáte <strong>0 až 200 000</strong> Imfcoinů podle toho, jak blízko jste
+          skutečnému výsledku. Odměna klesá <strong>lineárně</strong>: dokonalý tip má plných{" "}
+          <strong>200 000</strong>, na <strong>±40 %</strong> odchylky je nulová.
         </li>
         <li>
-          Na <strong>±20 %</strong> získáte <strong>100 000</strong> Imfcoinů — přesně váš vklad,
-          takže jste na nule.
-        </li>
-        <li>
-          Blíž než 20 % je čistý zisk (dokonalý tip = <strong>+100 000</strong>). Dál už je to ztráta,
-          ale postupná: např. na 30 % získáte <strong>50 000</strong> (čistě −50 000) místo tvrdé
-          ztráty celého vkladu.
+          Tip stojí <strong>100 000</strong> Imfcoinů, takže do zhruba <strong>±20 %</strong> odchylky
+          vyděláte víc, než jste vsadili (přesně na 20 % jste na nule).
         </li>
       </ul>
 
