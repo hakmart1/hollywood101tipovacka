@@ -1,9 +1,11 @@
 import type { Env } from "./types";
 
-const DEFAULT_SENDER = "tipovacka@hollywood101.cz";
+// NOTE: domain sender tipovacka@hollywood101.cz is set up in DNS (SPF+DKIM+
+// ownership all present) but its Mailjet sender is still *Inactive*, and Mailjet
+// silently drops mail from an inactive sender. Until the domain sender is
+// activated in the Mailjet dashboard, keep sending from the active gmail sender.
+const DEFAULT_SENDER = "hollywood101tipovacka@gmail.com";
 const SENDER_NAME = "Hollywood 101 Tipovačka";
-// The domain has no mailbox/MX, so point replies at a real inbox.
-const REPLY_TO = "hollywood101tipovacka@gmail.com";
 
 // Send a transactional email via Mailjet's Send API v3.1 (works from Pages
 // Functions, no domain needed — just a verified single sender). Returns true on
@@ -28,7 +30,6 @@ export async function sendEmail(
         Messages: [
           {
             From: { Email: env.EMAIL_FROM || DEFAULT_SENDER, Name: SENDER_NAME },
-            ReplyTo: { Email: REPLY_TO },
             To: [{ Email: message.to }],
             Subject: message.subject,
             TextPart: message.text,

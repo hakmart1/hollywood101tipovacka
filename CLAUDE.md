@@ -56,15 +56,14 @@ Against the live URL (`https://hollywood101tipovacka.pages.dev`):
 ## Email
 
 Transactional email via **Mailjet**. Sender is `DEFAULT_SENDER` in
-`functions/_lib/email.ts` — `tipovacka@hollywood101.cz`, domain-authenticated via SPF +
-DKIM (TXT records at Forpsi), with `Reply-To: hollywood101tipovacka@gmail.com` because
-the domain has no mailbox/MX. `sendEmail()` no-ops if the Mailjet keys are unset (local
-dev). Secrets: `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`.
+`functions/_lib/email.ts`, currently the gmail address `hollywood101tipovacka@gmail.com`
+(a working stopgap — it delivers). `sendEmail()` no-ops if the Mailjet keys are unset
+(local dev). Secrets: `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`.
 
-Notes: domain sending works off SPF+DKIM even though the individual Mailjet "sender"
-entry shows *Inactive* (its activation email can't be received — no mailbox); that's
-fine. Never send From a `@gmail.com` address via Mailjet — it fails DMARC alignment and
-lands in spam.
+**Gotcha that bit us:** a Mailjet *sender* that shows **Inactive** silently drops mail —
+the v3.1 send API returns `Status: success` but the message never even appears in the
+message log, and nothing is delivered. So an Inactive sender is NOT usable even with
+SPF/DKIM OK. Verify a sender is *Active* before pointing `DEFAULT_SENDER` at it.
 
 ## DNS
 
@@ -79,6 +78,12 @@ manage them.
   and issued SSL. Both this and `hollywood101tipovacka.pages.dev` serve the app (no
   redirect between them). Note: Forpsi has a wildcard `*.hollywood101.cz` → apex, so any
   new subdomain needs an explicit record to override it.
-- **Domain email sender `tipovacka@hollywood101.cz`** — **live.** SPF + DKIM +
-  ownership TXT records are at Forpsi (Mailjet DNS check = OK), `DEFAULT_SENDER` is the
-  domain address with `Reply-To` to gmail. See the Email section above.
+- **Domain email sender `tipovacka@hollywood101.cz`** — DNS done, activation pending.
+  SPF + DKIM + ownership TXT are all at Forpsi and Mailjet's DNS check is OK, but the
+  Mailjet *sender* is still **Inactive** so it can't send (see the Email gotcha above).
+  The REST `/sender/{id}/validate` only offers the activation-email method (undeliverable
+  — the domain has no mailbox/MX). **Next step: activate it in the Mailjet dashboard**
+  (Senders & Domains → validate the domain via the DNS records). Once it shows Active,
+  set `DEFAULT_SENDER` to `tipovacka@hollywood101.cz` and add
+  `Reply-To: hollywood101tipovacka@gmail.com`. Meanwhile the app sends from the gmail
+  sender.
