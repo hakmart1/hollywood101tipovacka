@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Loader from "./Loader";
 import { formatDateTime } from "./datetime";
 import { useConfirm } from "./useConfirm";
 
@@ -277,7 +278,7 @@ export default function AdminCodesPage({
       </p>
 
       {codes === null ? (
-        <p>Načítání…</p>
+        <Loader />
       ) : codes.length === 0 ? (
         <p>Zatím žádné aktivační kódy.</p>
       ) : (

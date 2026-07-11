@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Loader from "./Loader";
 import type { FormEvent } from "react";
 import {
   addDaysToInput,
@@ -626,7 +627,7 @@ export default function AdminContestsPage({ onMessage, timezone }: AdminContests
       ) : null}
 
       {rounds === null ? (
-        <p>Načítání…</p>
+        <Loader />
       ) : rounds.length === 0 ? (
         <p>Zatím žádné tipovačky.</p>
       ) : (

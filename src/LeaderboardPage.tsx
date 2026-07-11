@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Loader from "./Loader";
 import Leaderboard from "./Leaderboard";
 import type { LeaderboardEntry } from "./Leaderboard";
 
@@ -36,7 +37,7 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
   }
 
   if (leaderboard === null) {
-    return <p>Načítání…</p>;
+    return <Loader />;
   }
 
   return (

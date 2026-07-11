@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Loader from "./Loader";
 import type { FormEvent } from "react";
 import type { User } from "./App";
 import Modal from "./Modal";
@@ -356,7 +357,7 @@ export default function UserPage({
       <section className="coin-history">
         <h2>Historie Imfcoinů</h2>
         {history === null ? (
-          <p>Načítání…</p>
+          <Loader />
         ) : history.length === 0 ? (
           <p>Zatím žádné transakce.</p>
         ) : (

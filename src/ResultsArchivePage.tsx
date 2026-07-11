@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Loader from "./Loader";
 import RoundResultView from "./RoundResultView";
 import type { RoundResult } from "./RoundResultView";
 import { formatDateTime } from "./datetime";
@@ -87,7 +88,7 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
   }
 
   if (rounds === null) {
-    return <p>Načítání…</p>;
+    return <Loader />;
   }
 
   return (
@@ -111,7 +112,7 @@ export default function ResultsArchivePage({ onMessage, highlightNickname }: Res
                 detail && detail.id === round.id ? (
                   <RoundResultView result={detail} highlightNickname={highlightNickname} />
                 ) : (
-                  <p className="guess-hint">Načítání…</p>
+                  <Loader />
                 )
               ) : null}
             </li>
