@@ -143,7 +143,7 @@ export default function RulesPage() {
         <li>Ostatní v nejlepších 20 % tipů: <strong>+10 000</strong></li>
       </ul>
       <p className="rules-note">
-        Na bonusy za umístění mají nárok jen tipy do ±25 % — i pro umístění tedy záleží na
+        Na bonusy za umístění mají nárok jen tipy do ±40 % — i pro umístění tedy záleží na
         přesnosti.
       </p>
 

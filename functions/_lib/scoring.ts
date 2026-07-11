@@ -8,9 +8,11 @@
 export const MAX_ACCURACY_REWARD = 200_000;
 export const ACCURACY_ZERO_ERROR = 0.4; // reward reaches 0 at 40% error
 
-// Guesses within +/-25% still qualify for the per-movie and contest placement
-// bonuses. (The accuracy reward above no longer uses this threshold.)
-export const QUALIFY_MARGIN = 0.25;
+// Guesses within +/-40% qualify for the per-movie placement bonuses — aligned
+// with where the accuracy reward hits zero, so 40% off is the single "you get
+// nothing" boundary. (Contest-wide bonuses aren't gated by this margin, only by
+// guessing every movie.)
+export const QUALIFY_MARGIN = 0.4;
 export const TOP_PERCENT = 0.2; // 1st-3rd plus the rest of the top 20%
 
 // Per-movie placement bonuses (ranked by closeness on that movie).
