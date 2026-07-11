@@ -116,8 +116,9 @@ export default function RulesPage() {
       <p>Skládá se ze dvou částí, které se sčítají:</p>
       <ul>
         <li>
-          <strong>Lineární</strong> podle blízkosti: <strong>0–200 000</strong> Imfcoinů — dokonalý
-          tip má plných 200 000, na <strong>±40 %</strong> odchylky klesá na nulu.
+          <strong>Lineární část</strong> — čím přesnější tip, tím vyšší: <strong>0–200 000</strong>{" "}
+          Imfcoinů. Dokonalý tip má plných 200 000 a s rostoucí odchylkou rovnoměrně klesá až na
+          nulu na <strong>±40 %</strong>.
         </li>
         <li>
           <strong>Pevný bonus</strong> podle pásma odchylky: do <strong>±20 %</strong> navíc{" "}
