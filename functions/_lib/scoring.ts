@@ -21,7 +21,7 @@ export const MOVIE_TOP_PERCENT_BONUS = 10_000;
 
 // Round-wide placement bonuses (ranked by lowest total absolute error; only
 // players who guessed every movie are eligible). The marquee prize.
-export const CONTEST_PLACEMENT_BONUSES = [175_000, 135_000, 100_000]; // 1st, 2nd, 3rd
+export const CONTEST_PLACEMENT_BONUSES = [200_000, 150_000, 100_000]; // 1st, 2nd, 3rd
 export const CONTEST_TOP_PERCENT_BONUS = 50_000;
 
 // Placement bonuses are only paid to guesses that also qualify (within margin).

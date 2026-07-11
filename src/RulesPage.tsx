@@ -52,7 +52,7 @@ function RewardCalculator() {
           />
         </div>
         <div className="form-field">
-          <label htmlFor="calc-actual">Skutečný výsledek (v milionech)</label>
+          <label htmlFor="calc-actual">Tržby (v milionech)</label>
           <input
             id="calc-actual"
             type="text"
@@ -149,8 +149,8 @@ export default function RulesPage() {
         jste celkově hospodařili) — vyhrává nejnižší souhrnná odchylka:
       </p>
       <ul>
-        <li>Nejlepší celkově: <strong>+175 000</strong></li>
-        <li>2. celkově: <strong>+135 000</strong></li>
+        <li>Nejlepší celkově: <strong>+200 000</strong></li>
+        <li>2. celkově: <strong>+150 000</strong></li>
         <li>3. celkově: <strong>+100 000</strong></li>
         <li>Ostatní v nejlepších 20 % způsobilých hráčů: <strong>+50 000</strong></li>
       </ul>

@@ -55,13 +55,16 @@ Against the live URL (`https://hollywood101tipovacka.pages.dev`):
 
 ## Email
 
-Transactional email via **Mailjet** (single verified sender, no domain needed). Sender
-address is `DEFAULT_SENDER` in `functions/_lib/email.ts`. `sendEmail()` no-ops if the
-Mailjet keys are unset (local dev). Secrets: `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`.
+Transactional email via **Mailjet**. Sender is `DEFAULT_SENDER` in
+`functions/_lib/email.ts` — `tipovacka@hollywood101.cz`, domain-authenticated via SPF +
+DKIM (TXT records at Forpsi), with `Reply-To: hollywood101tipovacka@gmail.com` because
+the domain has no mailbox/MX. `sendEmail()` no-ops if the Mailjet keys are unset (local
+dev). Secrets: `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`.
 
-Deliverability note: sending as a `@gmail.com` From via Mailjet fails SPF/DKIM/DMARC
-alignment (looks like gmail spoofing) and tends to land in spam. The fix is a
-domain-authenticated sender.
+Notes: domain sending works off SPF+DKIM even though the individual Mailjet "sender"
+entry shows *Inactive* (its activation email can't be received — no mailbox); that's
+fine. Never send From a `@gmail.com` address via Mailjet — it fails DMARC alignment and
+lands in spam.
 
 ## DNS
 
@@ -76,12 +79,6 @@ manage them.
   and issued SSL. Both this and `hollywood101tipovacka.pages.dev` serve the app (no
   redirect between them). Note: Forpsi has a wildcard `*.hollywood101.cz` → apex, so any
   new subdomain needs an explicit record to override it.
-- **Domain email sender `tipovacka@hollywood101.cz`** registered in Mailjet (Inactive,
-  pending DNS). The web CNAME is in, but the three email TXT records are **not yet added**
-  at Forpsi: ownership token (`mailjet._<token>`), SPF (`@` =
-  `v=spf1 include:spf.mailjet.com ?all`), and DKIM (`mailjet._domainkey`). Fetch the
-  current values from the Mailjet API (`GET /v3/REST/dns/hollywood101.cz`). Once they are
-  live and the Mailjet domain goes Active, switch `DEFAULT_SENDER` in
-  `functions/_lib/email.ts` to it and add `Reply-To: hollywood101tipovacka@gmail.com`
-  (keeps replies flowing to a real inbox, since the domain has no mailbox/MX). Until then,
-  email stays on the gmail sender.
+- **Domain email sender `tipovacka@hollywood101.cz`** — **live.** SPF + DKIM +
+  ownership TXT records are at Forpsi (Mailjet DNS check = OK), `DEFAULT_SENDER` is the
+  domain address with `Reply-To` to gmail. See the Email section above.
