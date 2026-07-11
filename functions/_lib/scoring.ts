@@ -1,12 +1,17 @@
 // Reward rules for evaluating a round (mirrored on the user-facing rules page).
 // Used by both the admin evaluate endpoint and the public results endpoint so
 // displayed standings always match the coins actually paid out.
-// Accuracy reward: a linear gradient from MAX_ACCURACY_REWARD at a perfect guess
-// down to 0 at ACCURACY_ZERO_ERROR off. No hard cutoff — a guess just outside the
-// old margin still earns something and the loss ramps up gradually instead of a
-// full-stake hit. Break-even (reward == the 100k stake) lands at 20% error.
-export const MAX_ACCURACY_REWARD = 200_000;
-export const ACCURACY_ZERO_ERROR = 0.4; // reward reaches 0 at 40% error
+// Accuracy reward per guess = a linear gradient (MAX_ACCURACY_REWARD at a
+// perfect guess, sloping to 0 at ACCURACY_ZERO_ERROR off) PLUS a flat bracket
+// bonus on top: FLAT_BONUS_INNER within +/-FLAT_BONUS_INNER_MARGIN, else
+// FLAT_BONUS_OUTER out to ACCURACY_ZERO_ERROR. Beyond ACCURACY_ZERO_ERROR the
+// guess earns nothing. So a perfect guess pays 300k, +/-20% pays 200k, +/-40%
+// pays 50k.
+export const MAX_ACCURACY_REWARD = 200_000; // linear part, at a perfect guess
+export const ACCURACY_ZERO_ERROR = 0.4; // linear part hits 0 (and the cutoff) at 40%
+export const FLAT_BONUS_INNER_MARGIN = 0.2; // <= 20% error
+export const FLAT_BONUS_INNER = 100_000; // flat bonus within 20%
+export const FLAT_BONUS_OUTER = 50_000; // flat bonus from 20% up to 40%
 
 // Guesses within +/-40% qualify for the per-movie placement bonuses — aligned
 // with where the accuracy reward hits zero, so 40% off is the single "you get
@@ -75,11 +80,17 @@ export function guessError(guess: number, actual: number): number {
   return Math.abs(guess - actual) / actual;
 }
 
-// Linear accuracy reward for a single guess given its relative error: full at a
-// perfect guess, sloping to 0 at ACCURACY_ZERO_ERROR off. Shared by evaluation,
-// results display, and the rules-page calculator so they never diverge.
+// Accuracy reward for a single guess given its relative error: linear gradient
+// plus the flat bracket bonus (see constants above). 0 beyond ACCURACY_ZERO_ERROR.
+// Shared by evaluation, results display, and the rules-page calculator so they
+// never diverge.
 export function accuracyReward(error: number): number {
-  return Math.round(MAX_ACCURACY_REWARD * clamp(1 - error / ACCURACY_ZERO_ERROR, 0, 1));
+  if (error > ACCURACY_ZERO_ERROR) {
+    return 0;
+  }
+  const linear = Math.round(MAX_ACCURACY_REWARD * clamp(1 - error / ACCURACY_ZERO_ERROR, 0, 1));
+  const flat = error <= FLAT_BONUS_INNER_MARGIN ? FLAT_BONUS_INNER : FLAT_BONUS_OUTER;
+  return linear + flat;
 }
 
 // Competition ranks for an ascending-sorted list: equal values share a rank

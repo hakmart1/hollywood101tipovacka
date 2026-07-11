@@ -113,17 +113,23 @@ export default function RulesPage() {
       </ul>
 
       <h3>Odměna za přesnost (za tip)</h3>
+      <p>Skládá se ze dvou částí, které se sčítají:</p>
       <ul>
         <li>
-          Za každý tip získáte <strong>0 až 200 000</strong> Imfcoinů podle toho, jak blízko jste
-          skutečnému výsledku. Odměna klesá <strong>lineárně</strong>: dokonalý tip má plných{" "}
-          <strong>200 000</strong>, na <strong>±40 %</strong> odchylky je nulová.
+          <strong>Lineární</strong> podle blízkosti: <strong>0–200 000</strong> Imfcoinů — dokonalý
+          tip má plných 200 000, na <strong>±40 %</strong> odchylky klesá na nulu.
         </li>
         <li>
-          Tip stojí <strong>100 000</strong> Imfcoinů, takže do zhruba <strong>±20 %</strong> odchylky
-          vyděláte víc, než jste vsadili (přesně na 20 % jste na nule).
+          <strong>Pevný bonus</strong> podle pásma odchylky: do <strong>±20 %</strong> navíc{" "}
+          <strong>+100 000</strong>, v pásmu <strong>20–40 %</strong> navíc <strong>+50 000</strong>.
+          Nad ±40 % nezískáte nic.
         </li>
       </ul>
+      <p className="rules-note">
+        Dohromady tak dokonalý tip vynese <strong>300 000</strong>, tip na ±20 %{" "}
+        <strong>200 000</strong> a na ±40 % <strong>50 000</strong>. Tip stojí 100 000 Imfcoinů, takže
+        se vyplatí zhruba do ±30 % odchylky — konkrétní výpočet máš v kalkulačce níže.
+      </p>
 
       <h3>Vyzkoušej si odměnu</h3>
       <p>Spočítej si, kolik by vynesl konkrétní tip oproti skutečnému výsledku:</p>
