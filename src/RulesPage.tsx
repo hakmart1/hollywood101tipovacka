@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BASE_REWARD, PRECISION_REWARD, QUALIFY_MARGIN, guessError } from "../functions/_lib/scoring";
+import { accuracyReward, guessError } from "../functions/_lib/scoring";
 
 const GUESS_COST = 100_000;
 
@@ -23,16 +23,6 @@ function parseMillions(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-// Accuracy reward for a single guess vs. the actual result — the self-contained
-// part of the payout. Mirrors the formula in functions/_lib/scoring.ts.
-function accuracyReward(error: number): number {
-  if (error > QUALIFY_MARGIN) {
-    return 0;
-  }
-  const scale = Math.max(0, Math.min(1, (QUALIFY_MARGIN - error) / QUALIFY_MARGIN));
-  return BASE_REWARD + Math.round(PRECISION_REWARD * scale);
-}
-
 function RewardCalculator() {
   const [guess, setGuess] = useState("");
   const [actual, setActual] = useState("");
@@ -44,7 +34,6 @@ function RewardCalculator() {
   const ready = guessR !== null && actualR !== null && actualR > 0;
 
   const error = ready ? guessError(guessR, actualR) : 0;
-  const qualifies = ready && error <= QUALIFY_MARGIN;
   const reward = ready ? accuracyReward(error) : 0;
   const net = reward - GUESS_COST;
 
@@ -79,12 +68,7 @@ function RewardCalculator() {
         <div className="reward-calc-result">
           <div className="reward-calc-row">
             <span>Odchylka</span>
-            <strong>
-              {(error * 100).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %{" "}
-              <span className={qualifies ? "calc-ok" : "calc-bad"}>
-                ({qualifies ? "v rozmezí ±25 %" : "mimo ±25 %"})
-              </span>
-            </strong>
+            <strong>{(error * 100).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %</strong>
           </div>
           <div className="reward-calc-row">
             <span>Odměna za přesnost</span>
@@ -131,16 +115,18 @@ export default function RulesPage() {
       <h3>Odměna za přesnost (za tip)</h3>
       <ul>
         <li>
-          Pokud je váš tip do <strong>±25 %</strong> od skutečného výsledku, získáte zpět váš vklad{" "}
-          <strong>100 000</strong> Imfcoinů.
+          Za každý tip můžete získat <strong>0 až 200 000</strong> Imfcoinů podle toho, jak blízko
+          jste skutečnému výsledku. Odměna klesá <strong>lineárně</strong> — dokonalý tip získá plnou
+          částku a na <strong>±40 %</strong> odchylky je nulová.
         </li>
         <li>
-          Navíc bonus za přesnost až <strong>100 000</strong> Imfcoinů podle toho, jak blízko jste
-          byli: dokonalý tip získá plnou částku a na hranici 25 % klesá k nule.
+          Na <strong>±20 %</strong> získáte <strong>100 000</strong> Imfcoinů — přesně váš vklad,
+          takže jste na nule.
         </li>
         <li>
-          Tip v rozmezí tedy vynese <strong>100 000</strong> až <strong>200 000</strong> Imfcoinů. Tipy
-          mimo ±25 % nezískají nic.
+          Blíž než 20 % je čistý zisk (dokonalý tip = <strong>+100 000</strong>). Dál už je to ztráta,
+          ale postupná: např. na 30 % získáte <strong>50 000</strong> (čistě −50 000) místo tvrdé
+          ztráty celého vkladu.
         </li>
       </ul>
 

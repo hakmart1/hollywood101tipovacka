@@ -1,9 +1,16 @@
 // Reward rules for evaluating a round (mirrored on the user-facing rules page).
 // Used by both the admin evaluate endpoint and the public results endpoint so
 // displayed standings always match the coins actually paid out.
-export const QUALIFY_MARGIN = 0.25; // within +/-25% of the actual result qualifies
-export const BASE_REWARD = 100_000; // flat reward for a qualifying guess
-export const PRECISION_REWARD = 100_000; // extra, scaled 0..1 by how close the guess is
+// Accuracy reward: a linear gradient from MAX_ACCURACY_REWARD at a perfect guess
+// down to 0 at ACCURACY_ZERO_ERROR off. No hard cutoff — a guess just outside the
+// old margin still earns something and the loss ramps up gradually instead of a
+// full-stake hit. Break-even (reward == the 100k stake) lands at 20% error.
+export const MAX_ACCURACY_REWARD = 200_000;
+export const ACCURACY_ZERO_ERROR = 0.4; // reward reaches 0 at 40% error
+
+// Guesses within +/-25% still qualify for the per-movie and contest placement
+// bonuses. (The accuracy reward above no longer uses this threshold.)
+export const QUALIFY_MARGIN = 0.25;
 export const TOP_PERCENT = 0.2; // 1st-3rd plus the rest of the top 20%
 
 // Per-movie placement bonuses (ranked by closeness on that movie).
@@ -64,6 +71,13 @@ export function guessError(guess: number, actual: number): number {
     return guess === 0 ? 0 : 1;
   }
   return Math.abs(guess - actual) / actual;
+}
+
+// Linear accuracy reward for a single guess given its relative error: full at a
+// perfect guess, sloping to 0 at ACCURACY_ZERO_ERROR off. Shared by evaluation,
+// results display, and the rules-page calculator so they never diverge.
+export function accuracyReward(error: number): number {
+  return Math.round(MAX_ACCURACY_REWARD * clamp(1 - error / ACCURACY_ZERO_ERROR, 0, 1));
 }
 
 // Competition ranks for an ascending-sorted list: equal values share a rank
@@ -132,11 +146,10 @@ export function computeRoundScoring(
       error: guessError(guess.guessed_revenue, movie.actual_revenue)
     }));
 
-    // Accuracy reward: flat base + precision gradient, for qualifying guesses.
+    // Accuracy reward: linear gradient by closeness (0 beyond ACCURACY_ZERO_ERROR).
     for (const { guess, error } of scored) {
-      if (error <= QUALIFY_MARGIN) {
-        const scale = clamp((QUALIFY_MARGIN - error) / QUALIFY_MARGIN, 0, 1);
-        const accuracy = BASE_REWARD + Math.round(PRECISION_REWARD * scale);
+      const accuracy = accuracyReward(error);
+      if (accuracy > 0) {
         accuracyByGuess.set(guess.id, accuracy);
         guessPayout.set(guess.id, accuracy);
       }
