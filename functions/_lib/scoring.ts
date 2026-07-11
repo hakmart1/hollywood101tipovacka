@@ -84,12 +84,17 @@ export function guessError(guess: number, actual: number): number {
 // plus the flat bracket bonus (see constants above). 0 beyond ACCURACY_ZERO_ERROR.
 // Shared by evaluation, results display, and the rules-page calculator so they
 // never diverge.
-export function accuracyReward(error: number): number {
+export function accuracyRewardBreakdown(error: number): { linear: number; flat: number } {
   if (error > ACCURACY_ZERO_ERROR) {
-    return 0;
+    return { linear: 0, flat: 0 };
   }
   const linear = Math.round(MAX_ACCURACY_REWARD * clamp(1 - error / ACCURACY_ZERO_ERROR, 0, 1));
   const flat = error <= FLAT_BONUS_INNER_MARGIN ? FLAT_BONUS_INNER : FLAT_BONUS_OUTER;
+  return { linear, flat };
+}
+
+export function accuracyReward(error: number): number {
+  const { linear, flat } = accuracyRewardBreakdown(error);
   return linear + flat;
 }
 

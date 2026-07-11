@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { accuracyReward, guessError } from "../functions/_lib/scoring";
+import { accuracyRewardBreakdown, guessError } from "../functions/_lib/scoring";
 
 const GUESS_COST = 100_000;
 
@@ -34,7 +34,8 @@ function RewardCalculator() {
   const ready = guessR !== null && actualR !== null && actualR > 0;
 
   const error = ready ? guessError(guessR, actualR) : 0;
-  const reward = ready ? accuracyReward(error) : 0;
+  const { linear, flat } = ready ? accuracyRewardBreakdown(error) : { linear: 0, flat: 0 };
+  const reward = linear + flat;
   const net = reward - GUESS_COST;
 
   return (
@@ -71,7 +72,21 @@ function RewardCalculator() {
             <strong>{(error * 100).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} %</strong>
           </div>
           <div className="reward-calc-row">
-            <span>Odměna za přesnost</span>
+            <span>Lineární odměna</span>
+            <strong className={linear > 0 ? "amount-plus" : undefined}>
+              {linear > 0 ? "+" : ""}
+              {formatCoins(linear)}
+            </strong>
+          </div>
+          <div className="reward-calc-row">
+            <span>Pevný bonus</span>
+            <strong className={flat > 0 ? "amount-plus" : undefined}>
+              {flat > 0 ? "+" : ""}
+              {formatCoins(flat)}
+            </strong>
+          </div>
+          <div className="reward-calc-row">
+            <span>Odměna za přesnost celkem</span>
             <strong className={reward > 0 ? "amount-plus" : undefined}>
               {reward > 0 ? "+" : ""}
               {formatCoins(reward)} Imfcoinů
