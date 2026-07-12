@@ -1,4 +1,4 @@
-import { generateActivationCode, requireAdmin } from "../../../_lib/admin";
+import { createActivationCode, requireAdmin } from "../../../_lib/admin";
 import { json } from "../../../_lib/auth";
 import type { ActivationCodeListRecord, Env } from "../../../_lib/types";
 
@@ -48,22 +48,9 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: "Vyžaduje přístup administrátora." }, 403);
   }
 
-  // Retry on the (unlikely) UNIQUE collision of a generated code.
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const code = generateActivationCode();
-    try {
-      await context.env.DB.prepare(
-        "INSERT INTO activation_codes (code, user_id, consumed_date) VALUES (?1, NULL, NULL)"
-      ).bind(code).run();
-      return json({ error: null, message: `Aktivační kód ${code} vytvořen.`, code });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes("UNIQUE")) {
-        console.error("Activation code insert failed", error);
-        return json({ error: "Aktivační kód se nepodařilo vytvořit." });
-      }
-    }
+  const code = await createActivationCode(context.env);
+  if (!code) {
+    return json({ error: "Aktivační kód se nepodařilo vytvořit." });
   }
-
-  return json({ error: "Aktivační kód se nepodařilo vytvořit." });
+  return json({ error: null, message: `Aktivační kód ${code} vytvořen.`, code });
 }

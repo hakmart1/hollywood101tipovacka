@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Loader from "./Loader";
+import Modal from "./Modal";
 import { formatDateTime } from "./datetime";
 import { useConfirm } from "./useConfirm";
 
@@ -38,6 +39,15 @@ function TrashIcon() {
       <path d="M3 6h18" />
       <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg {...iconProps}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" />
     </svg>
   );
 }
@@ -106,6 +116,8 @@ export default function AdminCodesPage({
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [emailFor, setEmailFor] = useState<AdminCode | null>(null);
+  const [emailValue, setEmailValue] = useState("");
 
   useEffect(() => {
     void loadCodes(0);
@@ -216,6 +228,30 @@ export default function AdminCodesPage({
     }
   }
 
+  async function sendByEmail() {
+    if (!emailFor) {
+      return;
+    }
+    const target = emailFor;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/activation-codes/${target.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: emailValue.trim() })
+      });
+      const payload = (await response.json()) as CodesResponse;
+      onMessage(payload.error || payload.message || "Hotovo.");
+      if (!payload.error) {
+        setEmailFor(null);
+        setEmailValue("");
+        await loadCodes(page);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleRemove(code: AdminCode) {
     const redeemed = code.consumed_date !== null;
     const message = redeemed
@@ -305,15 +341,30 @@ export default function AdminCodesPage({
                 <td>
                   <div className="code-actions">
                     {!code.consumed_date ? (
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        title={copiedId === code.id ? "Zkopírováno" : "Kopírovat kód"}
-                        aria-label="Kopírovat kód"
-                        onClick={() => void handleCopy(code)}
-                      >
-                        {copiedId === code.id ? <CheckIcon /> : <CopyIcon />}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title={copiedId === code.id ? "Zkopírováno" : "Kopírovat kód"}
+                          aria-label="Kopírovat kód"
+                          onClick={() => void handleCopy(code)}
+                        >
+                          {copiedId === code.id ? <CheckIcon /> : <CopyIcon />}
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title="Poslat kód e-mailem"
+                          aria-label="Poslat kód e-mailem"
+                          disabled={busy}
+                          onClick={() => {
+                            setEmailValue(code.user_email ?? "");
+                            setEmailFor(code);
+                          }}
+                        >
+                          <MailIcon />
+                        </button>
+                      </>
                     ) : null}
                     <button
                       type="button"
@@ -350,6 +401,36 @@ export default function AdminCodesPage({
         ) : null}
         </div>
       )}
+      {emailFor ? (
+        <Modal title="Poslat kód e-mailem" onClose={() => setEmailFor(null)}>
+          <p className="modal-note">
+            Kód <strong>{emailFor.code}</strong> bude odeslán na zadaný e-mail.
+          </p>
+          <div className="form-field">
+            <label htmlFor="send-code-email">E-mail příjemce</label>
+            <input
+              id="send-code-email"
+              type="email"
+              value={emailValue}
+              autoFocus
+              onChange={(event) => setEmailValue(event.target.value)}
+            />
+          </div>
+          <div className="form-actions">
+            <button type="button" onClick={() => setEmailFor(null)}>
+              Zrušit
+            </button>
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || !emailValue.trim()}
+              onClick={() => void sendByEmail()}
+            >
+              Odeslat
+            </button>
+          </div>
+        </Modal>
+      ) : null}
       {confirmElement}
     </section>
   );

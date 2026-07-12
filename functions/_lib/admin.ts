@@ -37,3 +37,24 @@ export function generateActivationCode(): string {
   }
   return groups.join("-");
 }
+
+// Insert a fresh unassigned activation code, retrying on the (unlikely) UNIQUE
+// collision. Returns the code, or null if it couldn't be created.
+export async function createActivationCode(env: Env): Promise<string | null> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const code = generateActivationCode();
+    try {
+      await env.DB.prepare(
+        "INSERT INTO activation_codes (code, user_id, consumed_date) VALUES (?1, NULL, NULL)"
+      ).bind(code).run();
+      return code;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("UNIQUE")) {
+        console.error("Activation code insert failed", error);
+        return null;
+      }
+    }
+  }
+  return null;
+}

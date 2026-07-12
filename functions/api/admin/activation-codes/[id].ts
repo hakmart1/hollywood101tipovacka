@@ -1,5 +1,6 @@
 import { requireAdmin } from "../../../_lib/admin";
-import { json } from "../../../_lib/auth";
+import { json, normalizeEmail, validateEmail } from "../../../_lib/auth";
+import { sendEmail } from "../../../_lib/email";
 import type { ActivationCodeDeleteRecord, Env } from "../../../_lib/types";
 
 interface PagesContext {
@@ -10,6 +11,73 @@ interface PagesContext {
 
 interface ReserveRequestBody {
   reserved?: boolean;
+}
+
+interface SendRequestBody {
+  email?: unknown;
+}
+
+// E-mail an existing (unused) code to an address the admin types in, and mark it
+// reserved — the flip side of the "copy" action, for handing a code out.
+export async function onRequestPost(context: PagesContext): Promise<Response> {
+  const admin = await requireAdmin(context.request, context.env);
+  if (!admin) {
+    return json({ error: "Vyžaduje přístup administrátora." }, 403);
+  }
+
+  const codeId = Number.parseInt(context.params.id, 10);
+  if (!Number.isInteger(codeId) || codeId < 1) {
+    return json({ error: "Neplatné ID aktivačního kódu." });
+  }
+
+  let payload: SendRequestBody;
+  try {
+    payload = (await context.request.json()) as SendRequestBody;
+  } catch {
+    return json({ error: "Neplatný požadavek." });
+  }
+
+  const email = normalizeEmail(payload.email);
+  if (!email || !validateEmail(email)) {
+    return json({ error: "Zadejte platný e-mail." });
+  }
+
+  const record = await context.env.DB.prepare(
+    "SELECT code, consumed_date FROM activation_codes WHERE id = ?1"
+  ).bind(codeId).first<{ code: string; consumed_date: string | null }>();
+
+  if (!record) {
+    return json({ error: "Aktivační kód nebyl nalezen." });
+  }
+  if (record.consumed_date) {
+    return json({ error: "Tento kód už byl použit." });
+  }
+
+  const origin = new URL(context.request.url).origin;
+  const sent = await sendEmail(context.env, {
+    to: email,
+    subject: "Aktivační kód – Hollywood 101 Tipovačka",
+    html:
+      `<p>Ahoj,</p>` +
+      `<p>Tvůj aktivační kód do Hollywood 101 Tipovačky je:</p>` +
+      `<p style="font-size:1.2em"><strong>${record.code}</strong></p>` +
+      `<p>Zadej ho po přihlášení na <a href="${origin}">${origin}</a> pro aktivaci účtu.</p>`,
+    text:
+      `Ahoj,\n\n` +
+      `Tvůj aktivační kód do Hollywood 101 Tipovačky je: ${record.code}\n\n` +
+      `Zadej ho po přihlášení na ${origin} pro aktivaci účtu.`
+  });
+
+  if (!sent) {
+    return json({ error: "E-mail se nepodařilo odeslat." });
+  }
+
+  // Sending it out means it's in play — reserve it (mirrors copy).
+  await context.env.DB.prepare(
+    "UPDATE activation_codes SET reserved_date = COALESCE(reserved_date, ?1) WHERE id = ?2"
+  ).bind(new Date().toISOString(), codeId).run();
+
+  return json({ error: null, message: `Kód odeslán na ${email}.` });
 }
 
 // Reserve / un-reserve a code (soft marker; a reserved code still works).
