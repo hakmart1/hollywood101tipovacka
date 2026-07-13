@@ -1304,6 +1304,27 @@ button.linklike:hover {
   .coins-breakdown {
     display: block;
   }
+
+  /* Contest guess rows: stack the input above the button and let the button
+     text wrap, so "Tipnout (100,000 Imfcoinů)" can't run off a phone screen.
+     Shrink the poster to free up horizontal room. */
+  .guess-edit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .guess-edit input {
+    width: 100%;
+  }
+
+  .round-card .data-table td:nth-child(3) {
+    white-space: normal;
+  }
+
+  .movie-poster {
+    width: 40px;
+    height: 60px;
+  }
 }
 
 /* Reward calculator on the rules page. */
