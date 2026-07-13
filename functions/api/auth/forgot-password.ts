@@ -1,5 +1,5 @@
 import { createPasswordResetToken, json, normalizeEmail, validateEmail } from "../../_lib/auth";
-import { sendEmail } from "../../_lib/email";
+import { SITE_URL, emailLayout, sendEmail } from "../../_lib/email";
 import type { Env } from "../../_lib/types";
 
 interface PagesContext {
@@ -60,16 +60,16 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
       account.password_hash,
       context.env.SESSION_SECRET
     );
-    const origin = new URL(context.request.url).origin;
-    const resetUrl = `${origin}/#/reset?token=${encodeURIComponent(token)}`;
+    const resetUrl = `${SITE_URL}/#/reset?token=${encodeURIComponent(token)}`;
     const sent = await sendEmail(context.env, {
       to: email,
       subject: "Obnovení hesla – Hollywood 101 Tipovačka",
-      html:
+      html: emailLayout(
         `<p>Ahoj ${escapeHtml(account.nickname)},</p>` +
-        `<p>Pro nastavení nového hesla klikni na odkaz (platí 1 hodinu):</p>` +
-        `<p><a href="${resetUrl}">Obnovit heslo</a></p>` +
-        `<p>Pokud jsi o obnovení nežádal(a), tento e-mail ignoruj.</p>`,
+        `<p>Pro nastavení nového hesla klikni na tlačítko (odkaz platí 1 hodinu):</p>` +
+        `<p style="margin:16px 0;"><a href="${resetUrl}" style="background:#e6b800;color:#111827;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:bold;display:inline-block;">Obnovit heslo</a></p>` +
+        `<p style="font-size:13px;color:#6b7280;word-break:break-all;">Nebo otevři tento odkaz: ${resetUrl}</p>`
+      ),
       text:
         `Ahoj ${account.nickname},\n\n` +
         `Pro nastavení nového hesla otevři tento odkaz (platí 1 hodinu):\n${resetUrl}\n\n` +

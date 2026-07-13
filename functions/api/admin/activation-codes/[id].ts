@@ -1,6 +1,6 @@
 import { requireAdmin } from "../../../_lib/admin";
 import { json, normalizeEmail, validateEmail } from "../../../_lib/auth";
-import { sendEmail } from "../../../_lib/email";
+import { SITE_URL, emailLayout, sendEmail } from "../../../_lib/email";
 import type { ActivationCodeDeleteRecord, Env } from "../../../_lib/types";
 
 interface PagesContext {
@@ -53,19 +53,19 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     return json({ error: "Tento kód už byl použit." });
   }
 
-  const origin = new URL(context.request.url).origin;
   const sent = await sendEmail(context.env, {
     to: email,
-    subject: "Aktivační kód – Hollywood 101 Tipovačka",
-    html:
+    subject: "Aktivační kód do Hollywood 101 Tipovačky",
+    html: emailLayout(
       `<p>Ahoj,</p>` +
-      `<p>Tvůj aktivační kód do Hollywood 101 Tipovačky je:</p>` +
-      `<p style="font-size:1.2em"><strong>${record.code}</strong></p>` +
-      `<p>Zadej ho po přihlášení na <a href="${origin}">${origin}</a> pro aktivaci účtu.</p>`,
+      `<p>vítej v tipovačce! Tvůj aktivační kód je:</p>` +
+      `<p style="font-size:22px;font-weight:bold;letter-spacing:1px;color:#111827;margin:16px 0;">${record.code}</p>` +
+      `<p>Po přihlášení na <a href="${SITE_URL}">${SITE_URL}</a> ho zadej v sekci aktivace účtu a můžeš začít tipovat.</p>`
+    ),
     text:
       `Ahoj,\n\n` +
-      `Tvůj aktivační kód do Hollywood 101 Tipovačky je: ${record.code}\n\n` +
-      `Zadej ho po přihlášení na ${origin} pro aktivaci účtu.`
+      `vítej v tipovačce! Tvůj aktivační kód je: ${record.code}\n\n` +
+      `Po přihlášení na ${SITE_URL} ho zadej v sekci aktivace účtu a můžeš začít tipovat.`
   });
 
   if (!sent) {
