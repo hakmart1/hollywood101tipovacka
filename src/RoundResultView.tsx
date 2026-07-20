@@ -1,5 +1,3 @@
-import { formatDateTime } from "./datetime";
-
 export interface MovieStanding {
   rank: number;
   nickname: string;
@@ -73,11 +71,6 @@ export default function RoundResultView({
 }) {
   return (
     <section className="round-card">
-      <h3>
-        {result.title}{" "}
-        <span className="round-dates">(vyhodnoceno {formatDateTime(result.evaluated_date)})</span>
-      </h3>
-
       <div className="table-scroll">
       <table className="data-table">
         <thead>

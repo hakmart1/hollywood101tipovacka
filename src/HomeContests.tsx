@@ -232,7 +232,7 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
           ) : (
             <p className="round-dates">
               {`Otevřeno do ${formatDateTime(contest.date_to)}${
-                contest.type === "standard" ? " – Tržby za otvírací víkend" : ""
+                contest.type === "standard" ? " – Tržby za uplynulý víkend" : ""
               }`}
             </p>
           )}
