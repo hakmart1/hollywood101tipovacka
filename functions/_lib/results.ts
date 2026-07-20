@@ -8,6 +8,7 @@ export interface ResultRoundInput {
   date_to: string;
   evaluated_date: string | null;
   type: RoundType;
+  description: string | null;
 }
 
 interface ResultMovieRow {
@@ -57,6 +58,7 @@ export async function buildRoundResult(env: Env, round: ResultRoundInput) {
     date_to: round.date_to,
     evaluated_date: round.evaluated_date,
     type: round.type,
+    description: round.description,
     movies: movies.results.map((movie) => ({
       id: movie.id,
       movie_title: movie.movie_title,

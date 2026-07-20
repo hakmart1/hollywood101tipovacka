@@ -12,7 +12,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   // The last evaluated round of any type (standard or bonus). The home page
   // shows this one as the most recent contest; only this round is rendered.
   const latestRound = await context.env.DB.prepare(
-    `SELECT id, title, date_from, date_to, evaluated_date, type
+    `SELECT id, title, date_from, date_to, evaluated_date, type, description
       FROM rounds
       WHERE evaluated_date IS NOT NULL
       ORDER BY evaluated_date DESC

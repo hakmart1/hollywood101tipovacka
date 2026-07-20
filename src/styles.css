@@ -810,6 +810,11 @@ button.linklike:hover {
   color: #555;
 }
 
+.round-description {
+  margin: 0 0 0.85rem;
+  color: #4b5563;
+}
+
 .eval-countdown {
   margin: 0.1rem 0 0.5rem;
   font-size: 0.9rem;

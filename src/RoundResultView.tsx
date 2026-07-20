@@ -47,6 +47,7 @@ export interface RoundResult {
   date_to: string;
   evaluated_date: string;
   type: "standard" | "bonus";
+  description: string | null;
   movies: ResultMovie[];
   standings: Standing[];
 }
@@ -71,6 +72,7 @@ export default function RoundResultView({
 }) {
   return (
     <section className="round-card">
+      {result.description ? <p className="round-description">{result.description}</p> : null}
       <div className="table-scroll">
       <table className="data-table">
         <thead>

@@ -17,7 +17,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const round = await context.env.DB.prepare(
-    "SELECT id, title, date_from, date_to, evaluated_date, type FROM rounds WHERE id = ?1"
+    "SELECT id, title, date_from, date_to, evaluated_date, type, description FROM rounds WHERE id = ?1"
   ).bind(roundId).first<ResultRoundInput>();
 
   if (!round || !round.evaluated_date) {
