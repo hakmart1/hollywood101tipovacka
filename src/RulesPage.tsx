@@ -118,7 +118,10 @@ export default function RulesPage() {
 
       <h3>Jak hrát tipovačku</h3>
       <ul>
-        <li>Když je tipovačka otevřená, tipujete celkové tržby každého filmu.</li>
+        <li>
+          Pokud není uvedeno jinak, tipují se u každého filmu jeho americké (US) tržby za uplynulý
+          víkend.
+        </li>
         <li>Tipy se zadávají v milionech na 1 desetinné místo (např. 123,4 = 123 400 000 $).</li>
         <li>Každý tip stojí <strong>100 000</strong> Imfcoinů a je konečný.</li>
         <li>
