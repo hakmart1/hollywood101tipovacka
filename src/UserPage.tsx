@@ -420,26 +420,32 @@ export default function UserPage({
       ) : null}
 
       <section className="user-card avatar-card">
-        <div className="avatar-setting">
-          <label htmlFor="avatar-url">Profilový obrázek (odkaz)</label>
-          <div className="avatar-setting-row">
-            <input
-              id="avatar-url"
-              type="text"
-              inputMode="url"
-              placeholder="např. example.com/foto.jpg"
-              value={avatarInput}
-              onChange={(event) => setAvatarInput(event.target.value)}
-            />
-            <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
-              Uložit
-            </button>
-          </div>
-          <p className="avatar-setting-hint">
-            Když necháš prázdné, použije se{" "}
-            <a href="https://gravatar.com" target="_blank" rel="noreferrer">Gravatar</a>.
-          </p>
+        <h2 className="avatar-title">Profilový obrázek</h2>
+        <div className="avatar-setting-row">
+          <input
+            id="avatar-url"
+            type="text"
+            inputMode="url"
+            aria-label="Odkaz na profilový obrázek"
+            placeholder="např. example.com/foto.jpg"
+            value={avatarInput}
+            onChange={(event) => setAvatarInput(event.target.value)}
+          />
+          <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
+            Uložit
+          </button>
         </div>
+        <p className="avatar-setting-hint">
+          Nastav link na obrázek nebo využij služby Gravatar:{" "}
+          <a
+            className="account-avatar-hint"
+            href="https://gravatar.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Změnit obrázek přes Gravatar →
+          </a>
+        </p>
       </section>
 
       <section className="user-card danger-zone">

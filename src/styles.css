@@ -614,15 +614,10 @@ button.linklike:hover {
   object-fit: cover;
 }
 
-.avatar-setting {
-  margin-top: 0;
-}
-
-.avatar-setting label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 0.3rem;
+.user-card h2.avatar-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: #b8860b;
 }
 
 .avatar-setting-row {
@@ -643,6 +638,16 @@ button.linklike:hover {
   font-size: 0.8rem;
   color: #777;
   margin: 0.4rem 0 0;
+}
+
+.account-avatar-hint {
+  color: #b8860b;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.account-avatar-hint:hover {
+  text-decoration: underline;
 }
 
 .account-identity {
