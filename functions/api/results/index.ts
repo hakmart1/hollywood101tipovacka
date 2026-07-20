@@ -25,7 +25,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   // don't move anyone). Includes the admin, who plays like any other player.
   // previous_rank gives the movement since the evaluation before that.
   const leaderboard = await context.env.DB.prepare(
-    `SELECT nickname, avatar_hash, rank, previous_rank, rank_balance
+    `SELECT nickname, avatar_hash, avatar_url, rank, previous_rank, rank_balance
       FROM users
       WHERE rank IS NOT NULL AND status != 'deleted'
       ORDER BY rank ASC
@@ -33,6 +33,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   ).all<{
     nickname: string;
     avatar_hash: string | null;
+    avatar_url: string | null;
     rank: number;
     previous_rank: number | null;
     rank_balance: number | null;

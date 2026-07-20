@@ -42,6 +42,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
               email = NULL,
               nickname = ?1,
               avatar_hash = NULL,
+              avatar_url = NULL,
               previous_rank = NULL,
               rank = NULL,
               rank_balance = NULL

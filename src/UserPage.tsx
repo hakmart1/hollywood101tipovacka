@@ -98,6 +98,7 @@ export default function UserPage({
   const [busy, setBusy] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [avatarInput, setAvatarInput] = useState(user.avatar_url ?? "");
   const [pwOpen, setPwOpen] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -108,15 +109,18 @@ export default function UserPage({
   useEffect(() => {
     let cancelled = false;
     setAvatarFailed(false);
-    void gravatarUrl(user.email, 96).then((url) => {
-      if (!cancelled) {
-        setAvatarUrl(url);
-      }
-    });
+    // A custom image wins; only compute the Gravatar when there isn't one.
+    if (!(user.avatar_url && user.avatar_url.trim())) {
+      void gravatarUrl(user.email, 96).then((url) => {
+        if (!cancelled) {
+          setAvatarUrl(url);
+        }
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [user.email]);
+  }, [user.email, user.avatar_url]);
 
   useEffect(() => {
     if (user.status === "active") {
@@ -156,6 +160,24 @@ export default function UserPage({
       if (!payload.error) {
         await onSessionRefresh();
         await loadHistory(0);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveAvatar() {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ avatar_url: avatarInput.trim() })
+      });
+      const payload = (await response.json()) as CoinsResponse;
+      onMessage(payload.error || payload.message || "Hotovo.");
+      if (!payload.error) {
+        await onSessionRefresh();
       }
     } finally {
       setBusy(false);
@@ -228,13 +250,15 @@ export default function UserPage({
     }
   }
 
+  const displayAvatar = user.avatar_url?.trim() || avatarUrl;
+
   return (
     <div className="user-page">
       <section className="user-card">
         <div className="account-header">
           <div className="account-avatar">
-            {avatarUrl && !avatarFailed ? (
-              <img src={avatarUrl} alt="" onError={() => setAvatarFailed(true)} />
+            {displayAvatar && !avatarFailed ? (
+              <img src={displayAvatar} alt="" onError={() => setAvatarFailed(true)} />
             ) : (
               <span aria-hidden="true">{user.nickname.slice(0, 1).toUpperCase()}</span>
             )}
@@ -242,14 +266,6 @@ export default function UserPage({
           <div className="account-identity">
             <span className="account-nickname">{user.nickname}</span>
             <span className="account-email">{user.email}</span>
-            <a
-              className="account-avatar-hint"
-              href="https://gravatar.com"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Změnit obrázek přes Gravatar →
-            </a>
           </div>
           <div className="account-actions">
             <button type="button" className="ghost" onClick={() => setPwOpen((open) => !open)}>
@@ -259,6 +275,28 @@ export default function UserPage({
               Odhlásit
             </button>
           </div>
+        </div>
+
+        <div className="avatar-setting">
+          <label htmlFor="avatar-url">Profilový obrázek (odkaz)</label>
+          <div className="avatar-setting-row">
+            <input
+              id="avatar-url"
+              type="text"
+              inputMode="url"
+              placeholder="např. example.com/foto.jpg"
+              value={avatarInput}
+              onChange={(event) => setAvatarInput(event.target.value)}
+            />
+            <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
+              Uložit
+            </button>
+          </div>
+          <p className="avatar-setting-hint">
+            Vlož odkaz na obrázek (schéma nemusíš psát, doplní se https). Když necháš prázdné,
+            použije se <a href="https://gravatar.com" target="_blank" rel="noreferrer">Gravatar</a>{" "}
+            podle e-mailu.
+          </p>
         </div>
 
         <div className="balance-card">

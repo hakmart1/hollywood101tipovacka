@@ -1,5 +1,6 @@
 import { requireAdmin } from "../../../_lib/admin";
 import { json } from "../../../_lib/auth";
+import { normalizeUrl } from "../../../_lib/url";
 import type {
   AdminRoundRecord,
   CreateRoundMovieInput,
@@ -15,18 +16,6 @@ interface PagesContext {
 
 // Full ISO datetime, e.g. 2026-06-12T18:00:00.000Z (hour precision required).
 const DATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
-
-function normalizeUrl(value: unknown): string | null {
-  const url = String(value || "").trim();
-  if (!url) {
-    return null;
-  }
-  if (url.startsWith("data:image/") || url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
-  }
-  // Don't force the user to type a scheme — assume https.
-  return `https://${url}`;
-}
 
 const PAGE_SIZE = 10;
 

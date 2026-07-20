@@ -6,19 +6,24 @@ export interface LeaderboardEntry {
   previous_rank: number | null;
   rank_balance: number | null;
   avatar_hash?: string | null;
+  avatar_url?: string | null;
 }
 
-function PlayerCell({ nickname, avatarHash }: { nickname: string; avatarHash?: string | null }) {
+function PlayerCell({
+  nickname,
+  avatarHash,
+  avatarUrl
+}: {
+  nickname: string;
+  avatarHash?: string | null;
+  avatarUrl?: string | null;
+}) {
+  // A custom profile image wins; otherwise fall back to the Gravatar hash.
+  const src = avatarUrl?.trim() || (avatarHash ? `https://www.gravatar.com/avatar/${avatarHash}?s=48&d=blank` : null);
   return (
     <span className="player-cell">
       <span className="player-avatar" aria-hidden="true">
-        {avatarHash ? (
-          <img
-            src={`https://www.gravatar.com/avatar/${avatarHash}?s=48&d=blank`}
-            alt=""
-            loading="lazy"
-          />
-        ) : null}
+        {src ? <img src={src} alt="" loading="lazy" /> : null}
         <span className="player-avatar-fallback">{nickname.slice(0, 1).toUpperCase()}</span>
       </span>
       {nickname}
@@ -73,7 +78,11 @@ export default function Leaderboard({
             <td>{entry.rank}</td>
             <td>{renderChange(entry.previous_rank, entry.rank)}</td>
             <td>
-              <PlayerCell nickname={entry.nickname} avatarHash={entry.avatar_hash} />
+              <PlayerCell
+                nickname={entry.nickname}
+                avatarHash={entry.avatar_hash}
+                avatarUrl={entry.avatar_url}
+              />
             </td>
             {showCoins ? <td>{formatCoins(entry.rank_balance ?? 0)}</td> : null}
           </tr>

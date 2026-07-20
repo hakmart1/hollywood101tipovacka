@@ -614,15 +614,35 @@ button.linklike:hover {
   object-fit: cover;
 }
 
-.account-avatar-hint {
-  font-size: 0.8rem;
-  color: #b8860b;
-  text-decoration: none;
-  margin-top: 0.15rem;
+.avatar-setting {
+  margin-top: 1rem;
 }
 
-.account-avatar-hint:hover {
-  text-decoration: underline;
+.avatar-setting label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.avatar-setting-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.avatar-setting-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.avatar-setting-hint {
+  font-size: 0.8rem;
+  color: #777;
+  margin: 0.4rem 0 0;
 }
 
 .account-identity {

@@ -24,6 +24,7 @@ export interface User {
   status: UserStatus;
   imf_coins_balance: number;
   timezone: string | null;
+  avatar_url: string | null;
 }
 
 interface ApiErrorResponse {
@@ -117,26 +118,32 @@ function BrandLogo({ className }: { className?: string }) {
 }
 
 function NavAvatar({ user }: { user: User }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const custom = user.avatar_url?.trim() || null;
+  const [gravatar, setGravatar] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setFailed(false);
-    void gravatarUrl(user.email, 48).then((next) => {
-      if (!cancelled) {
-        setUrl(next);
-      }
-    });
+    // A custom image takes precedence; only fall back to Gravatar without one.
+    if (!custom) {
+      void gravatarUrl(user.email, 48).then((next) => {
+        if (!cancelled) {
+          setGravatar(next);
+        }
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [user.email]);
+  }, [user.email, custom]);
+
+  const src = custom || gravatar;
 
   return (
     <span className="nav-avatar" aria-hidden="true">
-      {url && !failed ? (
-        <img src={url} alt="" onError={() => setFailed(true)} />
+      {src && !failed ? (
+        <img src={src} alt="" onError={() => setFailed(true)} />
       ) : (
         user.nickname.slice(0, 1).toUpperCase()
       )}

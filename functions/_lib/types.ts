@@ -40,6 +40,7 @@ export interface UserRecord {
   status: UserStatus;
   imf_coins_balance: number;
   timezone: string | null;
+  avatar_url: string | null;
 }
 
 export interface LoginAccountRecord extends UserRecord {
