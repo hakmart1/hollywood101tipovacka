@@ -277,28 +277,6 @@ export default function UserPage({
           </div>
         </div>
 
-        <div className="avatar-setting">
-          <label htmlFor="avatar-url">Profilový obrázek (odkaz)</label>
-          <div className="avatar-setting-row">
-            <input
-              id="avatar-url"
-              type="text"
-              inputMode="url"
-              placeholder="např. example.com/foto.jpg"
-              value={avatarInput}
-              onChange={(event) => setAvatarInput(event.target.value)}
-            />
-            <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
-              Uložit
-            </button>
-          </div>
-          <p className="avatar-setting-hint">
-            Vlož odkaz na obrázek (schéma nemusíš psát, doplní se https). Když necháš prázdné,
-            použije se <a href="https://gravatar.com" target="_blank" rel="noreferrer">Gravatar</a>{" "}
-            podle e-mailu.
-          </p>
-        </div>
-
         <div className="balance-card">
           <CoinIcon />
           <div className="balance-body">
@@ -440,6 +418,29 @@ export default function UserPage({
         ) : null}
       </section>
       ) : null}
+
+      <section className="user-card avatar-card">
+        <div className="avatar-setting">
+          <label htmlFor="avatar-url">Profilový obrázek (odkaz)</label>
+          <div className="avatar-setting-row">
+            <input
+              id="avatar-url"
+              type="text"
+              inputMode="url"
+              placeholder="např. example.com/foto.jpg"
+              value={avatarInput}
+              onChange={(event) => setAvatarInput(event.target.value)}
+            />
+            <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
+              Uložit
+            </button>
+          </div>
+          <p className="avatar-setting-hint">
+            Když necháš prázdné, použije se{" "}
+            <a href="https://gravatar.com" target="_blank" rel="noreferrer">Gravatar</a>.
+          </p>
+        </div>
+      </section>
 
       <section className="user-card danger-zone">
         <div>
