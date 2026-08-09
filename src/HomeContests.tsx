@@ -62,6 +62,7 @@ function formatCountdown(ms: number): string {
 export default function HomeContests({ user, onMessage, onSessionRefresh }: HomeContestsProps) {
   const [contests, setContests] = useState<Contest[] | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [editing, setEditing] = useState<Record<number, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -125,6 +126,11 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
           delete next[movie.id];
           return next;
         });
+        setEditing((current) => {
+          const next = { ...current };
+          delete next[movie.id];
+          return next;
+        });
         await onSessionRefresh();
         await load();
       }
@@ -133,12 +139,52 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
     }
   }
 
+  function startEdit(movie: ContestMovie) {
+    if (movie.my_guess === null) {
+      return;
+    }
+    setDrafts((current) => ({ ...current, [movie.id]: String(movie.my_guess! / 1_000_000) }));
+    setEditing((current) => ({ ...current, [movie.id]: true }));
+  }
+
+  function cancelEdit(movie: ContestMovie) {
+    setEditing((current) => {
+      const next = { ...current };
+      delete next[movie.id];
+      return next;
+    });
+    setDrafts((current) => {
+      const next = { ...current };
+      delete next[movie.id];
+      return next;
+    });
+  }
+
   function renderGuessCell(movie: ContestMovie, closed: boolean) {
-    if (movie.my_guess !== null) {
-      return <span className="guess-placed">{formatMillions(movie.my_guess)}</span>;
+    const hasGuess = movie.my_guess !== null;
+    const isEditing = editing[movie.id] === true;
+    const canPlay = !!user && user.status === "active";
+
+    // Placed tip: show the value, plus an edit button while the round is open.
+    if (hasGuess && !isEditing) {
+      return (
+        <span className="guess-placed">
+          {formatMillions(movie.my_guess!)}
+          {!closed && canPlay ? (
+            <button
+              type="button"
+              className="guess-edit-link"
+              disabled={busy}
+              onClick={() => startEdit(movie)}
+            >
+              Upravit
+            </button>
+          ) : null}
+        </span>
+      );
     }
 
-    if (closed) {
+    if (!hasGuess && closed) {
       return <span className="guess-hint">Tipování uzavřeno.</span>;
     }
 
@@ -165,8 +211,13 @@ export default function HomeContests({ user, onMessage, onSessionRefresh }: Home
           }}
         />
         <button type="button" className="primary" disabled={busy} onClick={() => void placeGuess(movie)}>
-          Tipnout ({GUESS_COST.toLocaleString("en-US")} Imfcoinů)
+          {hasGuess ? "Uložit" : `Tipnout (${GUESS_COST.toLocaleString("en-US")} Imfcoinů)`}
         </button>
+        {hasGuess ? (
+          <button type="button" className="ghost" disabled={busy} onClick={() => cancelEdit(movie)}>
+            Zrušit
+          </button>
+        ) : null}
       </div>
     );
   }

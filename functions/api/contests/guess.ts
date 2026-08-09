@@ -70,8 +70,18 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     "SELECT id FROM guesses WHERE round_id = ?1 AND user_id = ?2 AND movie_id = ?3"
   ).bind(movie.round_id, user.id, movieId).first<{ id: number }>();
 
+  // Editing an already-placed tip while the round is still open: just update the
+  // value. No extra charge — the stake was paid when the tip was first placed.
   if (existing) {
-    return json({ error: "Tento film už máš otipovaný." });
+    try {
+      await context.env.DB.prepare(
+        "UPDATE guesses SET guessed_revenue = ?1 WHERE id = ?2"
+      ).bind(guessedRevenue, existing.id).run();
+    } catch (error) {
+      console.error("Guess update failed", error);
+      return json({ error: "Tip se teď nepodařilo uložit." });
+    }
+    return json({ error: null, message: `Tip na „${movie.movie_title}“ upraven.` });
   }
 
   if (user.imf_coins_balance < GUESS_COST) {

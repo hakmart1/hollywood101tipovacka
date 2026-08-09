@@ -1016,6 +1016,27 @@ button.linklike:hover {
   font-weight: 600;
 }
 
+.guess-edit-link {
+  margin-left: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2f6fdb;
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.guess-edit-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.guess-edit-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .guess-hint {
   font-size: 0.85rem;
   color: #777;

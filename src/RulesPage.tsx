@@ -123,7 +123,10 @@ export default function RulesPage() {
           tržby.
         </li>
         <li>Tipy se zadávají v milionech na 1 desetinné místo (např. 123,4 = 123 400 000 $).</li>
-        <li>Každý tip stojí <strong>100 000</strong> Imfcoinů a je konečný.</li>
+        <li>
+          Každý tip stojí <strong>100 000</strong> Imfcoinů. Dokud je tipovačka otevřená, můžeš ho
+          libovolně měnit (bez dalšího poplatku); po uzavření je konečný.
+        </li>
         <li>
           Po skončení tipovačky a zadání skutečných tržeb se tipovačka vyhodnotí a vyplatí se
           odměny.
