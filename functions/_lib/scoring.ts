@@ -161,7 +161,8 @@ export function computeRoundScoring(
     const list = guessesByMovie.get(movie.id) || [];
     const scored = list.map((guess) => ({
       guess,
-      error: guessError(guess.guessed_revenue, movie.actual_revenue)
+      error: guessError(guess.guessed_revenue, movie.actual_revenue),
+      miss: Math.abs(guess.guessed_revenue - movie.actual_revenue)
     }));
 
     // Accuracy reward: linear gradient by closeness (0 beyond ACCURACY_ZERO_ERROR).
@@ -173,21 +174,25 @@ export function computeRoundScoring(
       }
     }
 
-    // Per-movie placement bonuses: closest guesses for this movie, ranked by
-    // error. Ties share the place and split the pooled bonuses.
-    const ranked = [...scored].sort((a, b) => a.error - b.error);
-    const errors = ranked.map((item) => item.error);
+    // Rank by absolute miss (closest first). For actual revenue > 0 this is
+    // identical to ranking by relative error, but when the actual is 0 (a movie
+    // with no box-office report, entered as 0) every relative error collapses to
+    // 1 — ranking by miss still orders players by how far off they were instead
+    // of leaving everyone tied at 1st. Ties share the place and split the pooled
+    // bonuses; placement still requires qualifying by relative error.
+    const ranked = [...scored].sort((a, b) => a.miss - b.miss);
+    const misses = ranked.map((item) => item.miss);
     const topPercentCount = Math.floor(list.length * TOP_PERCENT);
-    const ranks = rankWithTies(errors);
+    const ranks = rankWithTies(misses);
     const bonuses = splitBonuses(
-      errors,
+      misses,
       (index) =>
         index < MOVIE_PLACEMENT_BONUSES.length
           ? MOVIE_PLACEMENT_BONUSES[index]
           : index < topPercentCount
             ? MOVIE_TOP_PERCENT_BONUS
             : 0,
-      (index) => !BONUS_REQUIRES_QUALIFY || errors[index] <= QUALIFY_MARGIN
+      (index) => !BONUS_REQUIRES_QUALIFY || ranked[index].error <= QUALIFY_MARGIN
     );
     ranked.forEach((item, index) => {
       const bonus = bonuses[index];
