@@ -675,6 +675,10 @@ button.linklike:hover {
   color: #6b7280;
 }
 
+.account-identity .profile-chips {
+  margin: 0.4rem 0 0.2rem;
+}
+
 .balance-card {
   display: flex;
   align-items: center;

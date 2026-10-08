@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import BalanceCard from "./BalanceCard";
-import { renderChange } from "./Leaderboard";
 import Loader from "./Loader";
+import { RankAside, TipStatChips } from "./ProfileStats";
+import type { TipStats } from "./ProfileStats";
 
 interface Player {
   id: number;
@@ -13,13 +14,6 @@ interface Player {
   rank: number | null;
   previous_rank: number | null;
   rank_balance: number | null;
-}
-
-interface TipStats {
-  tips: number;
-  median_error: number | null;
-  over: number;
-  under: number;
 }
 
 interface PlayerResponse {
@@ -38,23 +32,6 @@ interface ProfileData {
 interface PlayerPageProps {
   playerId: number;
   onMessage: (message: string) => void;
-}
-
-// Below this many tips the over/under split is mostly noise.
-const MIN_TIPS_FOR_STYLE = 5;
-
-function tipperStyle(stats: TipStats): { icon: string; label: string; detail: string } | null {
-  if (stats.tips < MIN_TIPS_FOR_STYLE) {
-    return null;
-  }
-  const overShare = stats.over / stats.tips;
-  const [icon, label] =
-    overShare >= 0.6 ? ["📈", "Optimista"] : overShare <= 0.4 ? ["📉", "Pesimista"] : ["⚖️", "Vyvážený"];
-  return { icon, label, detail: `tipuje výš u ${stats.over} z ${stats.tips} filmů` };
-}
-
-function formatPercent(ratio: number): string {
-  return `±${Math.round(ratio * 100)} %`;
 }
 
 function formatDate(value: string): string {
@@ -109,7 +86,6 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
   }
 
   const { player, rankedPlayers, stats } = data;
-  const style = stats ? tipperStyle(stats) : null;
   const avatar =
     player.avatar_url?.trim() ||
     (player.avatar_hash ? `https://www.gravatar.com/avatar/${player.avatar_hash}?s=192&d=404` : null);
@@ -130,38 +106,13 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
             <span className="profile-meta">
               {player.activated_date ? `Hraje od ${formatDate(player.activated_date)}` : "Účet zatím není aktivovaný"}
             </span>
-            {stats && stats.tips > 0 ? (
-              <div className="profile-chips">
-                {stats.median_error != null ? (
-                  <span className="profile-chip" title={`Typická odchylka tipu (medián z ${stats.tips} filmů)`}>
-                    🎯 <strong>{formatPercent(stats.median_error)}</strong> typická odchylka
-                  </span>
-                ) : null}
-                {style ? (
-                  <span className="profile-chip" title={style.detail}>
-                    {style.icon} <strong>{style.label}</strong>
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
+            <TipStatChips stats={stats} />
           </div>
         </div>
         <BalanceCard
           balance={player.imf_coins_balance}
           aside={
-            <div className="profile-rank">
-              <span className="profile-rank-value">
-                {player.rank !== null ? (
-                  <>
-                    {player.rank}.<span className="profile-rank-of"> z {rankedPlayers}</span>
-                    <span className="profile-rank-change">{renderChange(player.previous_rank, player.rank)}</span>
-                  </>
-                ) : (
-                  "–"
-                )}
-              </span>
-              <span className="balance-label">místo v žebříčku</span>
-            </div>
+            <RankAside rank={player.rank} previousRank={player.previous_rank} rankedPlayers={rankedPlayers} />
           }
         />
       </div>

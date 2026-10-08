@@ -4,6 +4,8 @@ import type { FormEvent } from "react";
 import type { User } from "./App";
 import Modal from "./Modal";
 import BalanceCard from "./BalanceCard";
+import { RankAside, TipStatChips } from "./ProfileStats";
+import type { TipStats } from "./ProfileStats";
 import { formatDateTime } from "./datetime";
 import { gravatarUrl } from "./gravatar";
 
@@ -33,6 +35,14 @@ interface UserPageProps {
 
 const LOW_BALANCE_THRESHOLD = 200_000;
 
+// Rank + tip stats come from the public profile endpoint, same as others see.
+interface ProfileSummary {
+  rank: number | null;
+  previousRank: number | null;
+  rankedPlayers: number;
+  stats: TipStats | null;
+}
+
 
 export default function UserPage({
   user,
@@ -55,6 +65,7 @@ export default function UserPage({
   const [confirmPw, setConfirmPw] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +82,27 @@ export default function UserPage({
       cancelled = true;
     };
   }, [user.email, user.avatar_url]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Best effort: the account page works fine without rank/stats.
+    void fetch(`/api/players/${user.id}`, { headers: { Accept: "application/json" } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!cancelled && payload?.player) {
+          setProfile({
+            rank: payload.player.rank,
+            previousRank: payload.player.previous_rank,
+            rankedPlayers: payload.ranked_players ?? 0,
+            stats: payload.stats ?? null
+          });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user.id]);
 
   useEffect(() => {
     if (user.status === "active") {
@@ -216,6 +248,7 @@ export default function UserPage({
           <div className="account-identity">
             <span className="account-nickname">{user.nickname}</span>
             <span className="account-email">{user.email}</span>
+            <TipStatChips stats={profile?.stats ?? null} />
             <a className="account-avatar-hint" href={`#/hrac/${user.id}`}>
               Zobrazit můj veřejný profil →
             </a>
@@ -230,7 +263,18 @@ export default function UserPage({
           </div>
         </div>
 
-        <BalanceCard balance={user.imf_coins_balance} />
+        <BalanceCard
+          balance={user.imf_coins_balance}
+          aside={
+            profile ? (
+              <RankAside
+                rank={profile.rank}
+                previousRank={profile.previousRank}
+                rankedPlayers={profile.rankedPlayers}
+              />
+            ) : null
+          }
+        />
 
         {user.status === "active" && user.imf_coins_balance <= LOW_BALANCE_THRESHOLD ? (
           <div className="balance-actions">
