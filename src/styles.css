@@ -1453,3 +1453,14 @@ button.linklike:hover {
   margin: 0;
   padding-left: 1.1rem;
 }
+
+/* Empty-state row inside a header-only table. */
+.data-table td.table-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 1.25rem 0.7rem;
+}
+
+.data-table tbody tr:has(> td.table-empty):hover {
+  background: transparent;
+}

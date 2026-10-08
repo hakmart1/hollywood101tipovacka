@@ -52,6 +52,8 @@ interface LeaderboardProps {
   showCoins?: boolean;
   // Rank movement makes no sense for a finished season's final standings.
   showChange?: boolean;
+  // Shown inside the (header-only) table when there are no entries.
+  emptyText?: string;
 }
 
 export default function Leaderboard({
@@ -59,9 +61,11 @@ export default function Leaderboard({
   highlightNickname,
   limit,
   showCoins = true,
-  showChange = true
+  showChange = true,
+  emptyText = "Zatím žádní hráči."
 }: LeaderboardProps) {
   const rows = limit ? entries.slice(0, limit) : entries;
+  const columnCount = 2 + (showChange ? 1 : 0) + (showCoins ? 1 : 0);
   return (
     <table className="data-table">
       <thead>
@@ -73,6 +77,13 @@ export default function Leaderboard({
         </tr>
       </thead>
       <tbody>
+        {rows.length === 0 ? (
+          <tr>
+            <td className="table-empty" colSpan={columnCount}>
+              {emptyText}
+            </td>
+          </tr>
+        ) : null}
         {rows.map((entry) => (
           <tr
             key={entry.nickname}

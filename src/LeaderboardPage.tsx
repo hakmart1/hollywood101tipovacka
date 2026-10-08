@@ -106,14 +106,14 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
     if (!entries) {
       return <Loader />;
     }
-    if (entries.length === 0) {
-      return (
-        <p className="guess-hint">
-          {isCurrent ? "Pořadí sezóny bude k dispozici po prvním vyhodnocení." : "V této sezóně nikdo nehrál."}
-        </p>
-      );
-    }
-    return <Leaderboard entries={entries} highlightNickname={highlightNickname} showChange={isCurrent} />;
+    return (
+      <Leaderboard
+        entries={entries}
+        highlightNickname={highlightNickname}
+        showChange={isCurrent}
+        emptyText={isCurrent ? "Pořadí bude k dispozici po prvním vyhodnocení." : "V této sezóně nikdo nehrál."}
+      />
+    );
   }
 
   if (leaderboard === null) {
@@ -126,13 +126,9 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
 
       {seasons.length === 0 ? (
         // Seasons couldn't be loaded — still show the live leaderboard.
-        leaderboard.length === 0 ? (
-          <p className="guess-hint">Zatím žádní hráči.</p>
-        ) : (
-          <div className="card">
-            <Leaderboard entries={leaderboard} highlightNickname={highlightNickname} />
-          </div>
-        )
+        <div className="card">
+          <Leaderboard entries={leaderboard} highlightNickname={highlightNickname} />
+        </div>
       ) : (
         <ul className="archive-list">
           {seasons.map((season) => (
