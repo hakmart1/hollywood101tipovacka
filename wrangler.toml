@@ -7,3 +7,13 @@ binding = "DB"
 database_name = "hollywood101tipovacka"
 database_id = "b1d3354f-a67a-4a08-b746-6b46536b5222"
 migrations_dir = "db/migrations"
+
+# Preview deployments (every non-main branch) run against the development D1, so
+# feature work never touches production data. Production keeps the top-level
+# binding above. d1_databases is non-inheritable, so it's fully redeclared here.
+[env.preview]
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "hollywood101tipovacka-development"
+database_id = "46a0a223-d046-4bda-a3ae-01d5e88a9ef1"
+migrations_dir = "db/migrations"
