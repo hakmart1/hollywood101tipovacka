@@ -1,6 +1,8 @@
+import PlayerLink from "./PlayerLink";
 import { formatCoins } from "./RoundResultView";
 
 export interface LeaderboardEntry {
+  user_id?: number | null;
   nickname: string;
   rank: number;
   previous_rank: number | null;
@@ -10,10 +12,12 @@ export interface LeaderboardEntry {
 }
 
 function PlayerCell({
+  userId,
   nickname,
   avatarHash,
   avatarUrl
 }: {
+  userId?: number | null;
   nickname: string;
   avatarHash?: string | null;
   avatarUrl?: string | null;
@@ -26,12 +30,12 @@ function PlayerCell({
         {src ? <img src={src} alt="" loading="lazy" /> : null}
         <span className="player-avatar-fallback">{nickname.slice(0, 1).toUpperCase()}</span>
       </span>
-      {nickname}
+      <PlayerLink userId={userId} nickname={nickname} />
     </span>
   );
 }
 
-function renderChange(previousRank: number | null, currentRank: number) {
+export function renderChange(previousRank: number | null, currentRank: number) {
   if (previousRank === null) {
     return <span className="rank-new">nový</span>;
   }
@@ -93,6 +97,7 @@ export default function Leaderboard({
             {showChange ? <td>{renderChange(entry.previous_rank, entry.rank)}</td> : null}
             <td>
               <PlayerCell
+                userId={entry.user_id}
                 nickname={entry.nickname}
                 avatarHash={entry.avatar_hash}
                 avatarUrl={entry.avatar_url}

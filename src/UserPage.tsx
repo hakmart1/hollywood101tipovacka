@@ -3,7 +3,9 @@ import Loader from "./Loader";
 import type { FormEvent } from "react";
 import type { User } from "./App";
 import Modal from "./Modal";
-import imfCoinImage from "./imf.webp";
+import BalanceCard from "./BalanceCard";
+import { RankAside, TipStatChips } from "./ProfileStats";
+import type { TipStats } from "./ProfileStats";
 import { formatDateTime } from "./datetime";
 import { gravatarUrl } from "./gravatar";
 
@@ -33,56 +35,14 @@ interface UserPageProps {
 
 const LOW_BALANCE_THRESHOLD = 200_000;
 
-function CoinIcon() {
-  return (
-    <svg
-      className="balance-coin"
-      width="56"
-      height="56"
-      viewBox="0 0 64 64"
-      aria-hidden="true"
-    >
-      <defs>
-        {/* portrait fills most of the coin; only a slim ring carries the legend */}
-        <clipPath id="imfcoin-face">
-          <circle cx="32" cy="32" r="24" />
-        </clipPath>
-        {/* desaturate, then brighten + raise contrast so the face reads as bright engraving */}
-        <filter id="imfcoin-engrave">
-          <feColorMatrix type="saturate" values="0" />
-          <feComponentTransfer>
-            <feFuncR type="linear" slope="1.7" intercept="-0.1" />
-            <feFuncG type="linear" slope="1.7" intercept="-0.1" />
-            <feFuncB type="linear" slope="1.7" intercept="-0.1" />
-          </feComponentTransfer>
-        </filter>
-        {/* top legend sits just outside the portrait; bottom a touch further out so
-            neither row crosses the rim edge */}
-        <path id="imfcoin-top" d="M 7.2 32 A 24.8 24.8 0 0 1 56.8 32" fill="none" />
-        <path id="imfcoin-bottom" d="M 5.5 32 A 26.5 26.5 0 0 0 58.5 32" fill="none" />
-      </defs>
-
-      {/* coin body + rim */}
-      <circle cx="32" cy="32" r="30" fill="#e8b923" stroke="#b8860b" strokeWidth="2.5" />
-
-      {/* portrait fills the inner circle, stamped into gold */}
-      <g clipPath="url(#imfcoin-face)">
-        <circle cx="32" cy="32" r="24.5" fill="#dba916" />
-        <image
-          href={imfCoinImage}
-          x="7.5"
-          y="6.5"
-          width="49"
-          height="49"
-          preserveAspectRatio="xMidYMid slice"
-          filter="url(#imfcoin-engrave)"
-          style={{ mixBlendMode: "multiply" }}
-        />
-      </g>
-      <circle cx="32" cy="32" r="24.5" fill="none" stroke="#b8860b" strokeWidth="0.8" />
-    </svg>
-  );
+// Rank + tip stats come from the public profile endpoint, same as others see.
+interface ProfileSummary {
+  rank: number | null;
+  previousRank: number | null;
+  rankedPlayers: number;
+  stats: TipStats | null;
 }
+
 
 export default function UserPage({
   user,
@@ -105,6 +65,7 @@ export default function UserPage({
   const [confirmPw, setConfirmPw] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +82,27 @@ export default function UserPage({
       cancelled = true;
     };
   }, [user.email, user.avatar_url]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Best effort: the account page works fine without rank/stats.
+    void fetch(`/api/players/${user.id}`, { headers: { Accept: "application/json" } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (!cancelled && payload?.player) {
+          setProfile({
+            rank: payload.player.rank,
+            previousRank: payload.player.previous_rank,
+            rankedPlayers: payload.ranked_players ?? 0,
+            stats: payload.stats ?? null
+          });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user.id]);
 
   useEffect(() => {
     if (user.status === "active") {
@@ -266,6 +248,7 @@ export default function UserPage({
           <div className="account-identity">
             <span className="account-nickname">{user.nickname}</span>
             <span className="account-email">{user.email}</span>
+            <TipStatChips stats={profile?.stats ?? null} />
           </div>
           <div className="account-actions">
             <button type="button" className="ghost" onClick={() => setPwOpen((open) => !open)}>
@@ -277,15 +260,18 @@ export default function UserPage({
           </div>
         </div>
 
-        <div className="balance-card">
-          <CoinIcon />
-          <div className="balance-body">
-            <span className="balance-label">Imfcoiny</span>
-            <span className="balance-value">
-              {user.imf_coins_balance.toLocaleString("en-US")}
-            </span>
-          </div>
-        </div>
+        <BalanceCard
+          balance={user.imf_coins_balance}
+          aside={
+            profile ? (
+              <RankAside
+                rank={profile.rank}
+                previousRank={profile.previousRank}
+                rankedPlayers={profile.rankedPlayers}
+              />
+            ) : null
+          }
+        />
 
         {user.status === "active" && user.imf_coins_balance <= LOW_BALANCE_THRESHOLD ? (
           <div className="balance-actions">

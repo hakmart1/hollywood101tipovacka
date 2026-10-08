@@ -23,12 +23,14 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const standings = await context.env.DB.prepare(
-    `SELECT s.rank, s.nickname, s.balance, u.avatar_hash, u.avatar_url
+    `SELECT CASE WHEN u.status = 'deleted' THEN NULL ELSE s.user_id END AS user_id,
+            s.rank, s.nickname, s.balance, u.avatar_hash, u.avatar_url
        FROM season_standings s
        LEFT JOIN users u ON u.id = s.user_id
       WHERE s.season_id = ?1
       ORDER BY s.rank ASC, s.nickname ASC`
   ).bind(seasonId).all<{
+    user_id: number | null;
     rank: number;
     nickname: string;
     balance: number;

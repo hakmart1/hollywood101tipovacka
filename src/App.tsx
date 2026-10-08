@@ -6,6 +6,7 @@ import AdminSeasonsPage from "./AdminSeasonsPage";
 import HomeContests from "./HomeContests";
 import HomeResults from "./HomeResults";
 import LeaderboardPage from "./LeaderboardPage";
+import PlayerPage from "./PlayerPage";
 import Modal from "./Modal";
 import ResultsArchivePage from "./ResultsArchivePage";
 import ResetPasswordPage from "./ResetPasswordPage";
@@ -53,6 +54,7 @@ type Route =
   | "reset"
   | "history"
   | "leaderboard"
+  | "player"
   | "admin-codes"
   | "admin-contests"
   | "admin-seasons";
@@ -96,6 +98,9 @@ function readRoute(): Route {
   }
   if (hash === "#/results") {
     return "history";
+  }
+  if (hash.startsWith("#/hrac/")) {
+    return "player";
   }
   if (hash === "#/poradi") {
     return "leaderboard";
@@ -158,6 +163,8 @@ function NavAvatar({ user }: { user: User }) {
 
 export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
+  // The raw hash too: moving between two profiles keeps route === "player".
+  const [hash, setHash] = useState(() => window.location.hash);
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   // Deployment environment reported by /api/me ("production" when unset).
@@ -211,7 +218,10 @@ export default function App() {
   }, [currentUser?.id, currentUser?.role, route]);
 
   useEffect(() => {
-    const onHashChange = () => setRoute(readRoute());
+    const onHashChange = () => {
+      setRoute(readRoute());
+      setHash(window.location.hash);
+    };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -570,6 +580,13 @@ export default function App() {
 
         {route === "leaderboard" ? (
           <LeaderboardPage onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
+        ) : null}
+        {route === "player" ? (
+          <PlayerPage
+            key={hash}
+            playerId={Number.parseInt(hash.slice("#/hrac/".length), 10)}
+            onMessage={setOutput}
+          />
         ) : null}
       </main>
 

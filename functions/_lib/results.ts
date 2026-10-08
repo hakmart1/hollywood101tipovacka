@@ -40,14 +40,19 @@ export async function buildRoundResult(env: Env, round: ResultRoundInput) {
 
   // Nicknames for everyone who guessed (covers overall + per-movie standings).
   const nameById = new Map<number, string>();
+  // Only linkable (non-deleted) players get their id exposed for profile links.
+  const linkable = new Set<number>();
   const guesserIds = [...new Set(guesses.results.map((guess) => guess.user_id))];
   if (guesserIds.length > 0) {
     const placeholders = guesserIds.map((_, index) => `?${index + 1}`).join(", ");
     const users = await env.DB.prepare(
-      `SELECT id, nickname FROM users WHERE id IN (${placeholders})`
-    ).bind(...guesserIds).all<{ id: number; nickname: string }>();
+      `SELECT id, nickname, status FROM users WHERE id IN (${placeholders})`
+    ).bind(...guesserIds).all<{ id: number; nickname: string; status: string }>();
     for (const user of users.results) {
       nameById.set(user.id, user.nickname);
+      if (user.status !== "deleted") {
+        linkable.add(user.id);
+      }
     }
   }
 
@@ -66,6 +71,7 @@ export async function buildRoundResult(env: Env, round: ResultRoundInput) {
       actual_revenue: movie.actual_revenue,
       standings: (movieStandings.get(movie.id) || []).map((entry) => ({
         rank: entry.rank,
+        user_id: linkable.has(entry.userId) ? entry.userId : null,
         nickname: nameById.get(entry.userId) || "Unknown",
         guess: entry.guessedRevenue,
         accuracy: entry.accuracy,
@@ -75,6 +81,7 @@ export async function buildRoundResult(env: Env, round: ResultRoundInput) {
     })),
     standings: standings.map((standing) => ({
       rank: standing.rank,
+      user_id: linkable.has(standing.userId) ? standing.userId : null,
       nickname: nameById.get(standing.userId) || "Unknown",
       total_error: standing.totalAbsError,
       contest_bonus: standing.contestBonus,
