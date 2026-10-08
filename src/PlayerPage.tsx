@@ -22,11 +22,26 @@ interface TipStats {
   under: number;
 }
 
+interface PastSeason {
+  id: number;
+  name: string;
+  rank: number;
+  players: number;
+}
+
 interface PlayerResponse {
   error: string | null;
   player?: Player;
-  season_name?: string | null;
+  ranked_players?: number;
+  past_seasons?: PastSeason[];
   stats?: TipStats;
+}
+
+interface ProfileData {
+  player: Player;
+  rankedPlayers: number;
+  pastSeasons: PastSeason[];
+  stats: TipStats | null;
 }
 
 interface PlayerPageProps {
@@ -57,7 +72,7 @@ function formatDate(value: string): string {
 // Public profile of a player. Deliberately a set of cards so more sections
 // (achievements, stats) can be added later.
 export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
-  const [data, setData] = useState<{ player: Player; seasonName: string | null; stats: TipStats | null } | "missing" | null>(null);
+  const [data, setData] = useState<ProfileData | "missing" | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
@@ -77,7 +92,12 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
         setData("missing");
         return;
       }
-      setData({ player: payload.player, seasonName: payload.season_name ?? null, stats: payload.stats ?? null });
+      setData({
+        player: payload.player,
+        rankedPlayers: payload.ranked_players ?? 0,
+        pastSeasons: payload.past_seasons ?? [],
+        stats: payload.stats ?? null
+      });
     } catch {
       onMessage("Profil hráče se nepodařilo načíst.");
       setData("missing");
@@ -97,7 +117,7 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
     );
   }
 
-  const { player, seasonName, stats } = data;
+  const { player, rankedPlayers, pastSeasons, stats } = data;
   const style = stats ? tipperStyle(stats) : null;
   const avatar =
     player.avatar_url?.trim() ||
@@ -125,35 +145,58 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
       </div>
 
       <div className="user-card">
-        <h3 className="profile-section-title">{seasonName ?? "Aktuální sezóna"}</h3>
+        <h3 className="profile-section-title">Aktuální sezóna</h3>
         <div className="profile-stats">
           <div className="profile-stat">
             <span className="profile-stat-value">
-              {player.rank !== null ? `${player.rank}.` : "–"}
               {player.rank !== null ? (
-                <span className="profile-stat-change">{renderChange(player.previous_rank, player.rank)}</span>
-              ) : null}
+                <>
+                  {player.rank}.<span className="profile-stat-of"> z {rankedPlayers}</span>
+                  <span className="profile-stat-change">{renderChange(player.previous_rank, player.rank)}</span>
+                </>
+              ) : (
+                "–"
+              )}
             </span>
             <span className="profile-stat-label">místo v žebříčku</span>
           </div>
-          <div className="profile-stat">
-            <span className="profile-stat-value">
-              {stats?.median_error != null ? formatPercent(stats.median_error) : "–"}
-            </span>
-            <span className="profile-stat-label">
-              typická odchylka tipu{stats && stats.tips > 0 ? ` (${stats.tips} filmů)` : ""}
-            </span>
-          </div>
-          {style ? (
-            <div className="profile-stat">
-              <span className="profile-stat-value">{style.label}</span>
-              <span className="profile-stat-label">{style.detail}</span>
-            </div>
-          ) : null}
         </div>
         {player.rank === null ? (
           <p className="guess-hint">Zatím bez umístění — pořadí se určuje při vyhodnocení tipovačky.</p>
         ) : null}
+        {pastSeasons.length > 0 ? (
+          <p className="profile-past-seasons">
+            Minulé sezóny:{" "}
+            {pastSeasons.map((season, index) => (
+              <span key={season.id}>
+                {index > 0 ? " · " : ""}
+                {season.name} – {season.rank}. z {season.players}
+              </span>
+            ))}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="user-card">
+        <h3 className="profile-section-title">Statistiky tipů</h3>
+        {stats && stats.tips > 0 ? (
+          <div className="profile-stats">
+            <div className="profile-stat">
+              <span className="profile-stat-value">
+                {stats.median_error != null ? formatPercent(stats.median_error) : "–"}
+              </span>
+              <span className="profile-stat-label">typická odchylka tipu ({stats.tips} filmů)</span>
+            </div>
+            {style ? (
+              <div className="profile-stat">
+                <span className="profile-stat-value">{style.label}</span>
+                <span className="profile-stat-label">{style.detail}</span>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="guess-hint">Zatím žádné vyhodnocené tipy.</p>
+        )}
       </div>
     </section>
   );

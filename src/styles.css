@@ -1548,6 +1548,18 @@ button.linklike:hover {
   font-weight: 700;
 }
 
+.profile-stat-of {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.profile-past-seasons {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .profile-stat-change {
   margin-left: 0.5rem;
   font-size: 0.9rem;
