@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import BalanceCard from "./BalanceCard";
+import { renderChange } from "./Leaderboard";
 import Loader from "./Loader";
 
 interface Player {
@@ -10,18 +11,43 @@ interface Player {
   activated_date: string | null;
   imf_coins_balance: number;
   rank: number | null;
+  previous_rank: number | null;
   rank_balance: number | null;
+}
+
+interface TipStats {
+  tips: number;
+  median_error: number | null;
+  over: number;
+  under: number;
 }
 
 interface PlayerResponse {
   error: string | null;
   player?: Player;
   season_name?: string | null;
+  stats?: TipStats;
 }
 
 interface PlayerPageProps {
   playerId: number;
   onMessage: (message: string) => void;
+}
+
+// Below this many tips the over/under split is mostly noise.
+const MIN_TIPS_FOR_STYLE = 5;
+
+function tipperStyle(stats: TipStats): { label: string; detail: string } | null {
+  if (stats.tips < MIN_TIPS_FOR_STYLE) {
+    return null;
+  }
+  const overShare = stats.over / stats.tips;
+  const label = overShare >= 0.6 ? "Optimista 📈" : overShare <= 0.4 ? "Pesimista 📉" : "Vyvážený ⚖️";
+  return { label, detail: `tipuje výš u ${stats.over} z ${stats.tips} filmů` };
+}
+
+function formatPercent(ratio: number): string {
+  return `±${Math.round(ratio * 100)} %`;
 }
 
 function formatDate(value: string): string {
@@ -31,7 +57,7 @@ function formatDate(value: string): string {
 // Public profile of a player. Deliberately a set of cards so more sections
 // (achievements, stats) can be added later.
 export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
-  const [data, setData] = useState<{ player: Player; seasonName: string | null } | "missing" | null>(null);
+  const [data, setData] = useState<{ player: Player; seasonName: string | null; stats: TipStats | null } | "missing" | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   useEffect(() => {
@@ -51,7 +77,7 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
         setData("missing");
         return;
       }
-      setData({ player: payload.player, seasonName: payload.season_name ?? null });
+      setData({ player: payload.player, seasonName: payload.season_name ?? null, stats: payload.stats ?? null });
     } catch {
       onMessage("Profil hráče se nepodařilo načíst.");
       setData("missing");
@@ -71,7 +97,8 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
     );
   }
 
-  const { player, seasonName } = data;
+  const { player, seasonName, stats } = data;
+  const style = stats ? tipperStyle(stats) : null;
   const avatar =
     player.avatar_url?.trim() ||
     (player.avatar_hash ? `https://www.gravatar.com/avatar/${player.avatar_hash}?s=192&d=404` : null);
@@ -101,9 +128,28 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
         <h3 className="profile-section-title">{seasonName ?? "Aktuální sezóna"}</h3>
         <div className="profile-stats">
           <div className="profile-stat">
-            <span className="profile-stat-value">{player.rank !== null ? `${player.rank}.` : "–"}</span>
+            <span className="profile-stat-value">
+              {player.rank !== null ? `${player.rank}.` : "–"}
+              {player.rank !== null ? (
+                <span className="profile-stat-change">{renderChange(player.previous_rank, player.rank)}</span>
+              ) : null}
+            </span>
             <span className="profile-stat-label">místo v žebříčku</span>
           </div>
+          <div className="profile-stat">
+            <span className="profile-stat-value">
+              {stats?.median_error != null ? formatPercent(stats.median_error) : "–"}
+            </span>
+            <span className="profile-stat-label">
+              typická odchylka tipu{stats && stats.tips > 0 ? ` (${stats.tips} filmů)` : ""}
+            </span>
+          </div>
+          {style ? (
+            <div className="profile-stat">
+              <span className="profile-stat-value">{style.label}</span>
+              <span className="profile-stat-label">{style.detail}</span>
+            </div>
+          ) : null}
         </div>
         {player.rank === null ? (
           <p className="guess-hint">Zatím bez umístění — pořadí se určuje při vyhodnocení tipovačky.</p>

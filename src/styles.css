@@ -1548,6 +1548,13 @@ button.linklike:hover {
   font-weight: 700;
 }
 
+.profile-stat-change {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 .profile-stat-label {
   font-size: 0.8rem;
   color: #6b7280;

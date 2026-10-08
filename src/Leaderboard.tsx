@@ -35,7 +35,7 @@ function PlayerCell({
   );
 }
 
-function renderChange(previousRank: number | null, currentRank: number) {
+export function renderChange(previousRank: number | null, currentRank: number) {
   if (previousRank === null) {
     return <span className="rank-new">nový</span>;
   }

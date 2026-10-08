@@ -15,7 +15,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const player = await context.env.DB.prepare(
-    `SELECT id, nickname, avatar_hash, avatar_url, activated_date, imf_coins_balance, rank, rank_balance
+    `SELECT id, nickname, avatar_hash, avatar_url, activated_date, imf_coins_balance, rank, previous_rank, rank_balance
        FROM users
       WHERE id = ?1 AND status != 'deleted'`
   ).bind(playerId).first<{
@@ -26,6 +26,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     activated_date: string | null;
     imf_coins_balance: number;
     rank: number | null;
+    previous_rank: number | null;
     rank_balance: number | null;
   }>();
 
@@ -34,8 +35,47 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const season = await context.env.DB.prepare(
-    "SELECT name FROM seasons WHERE ended_date IS NULL ORDER BY id DESC LIMIT 1"
-  ).first<{ name: string }>();
+    "SELECT name, started_date FROM seasons WHERE ended_date IS NULL ORDER BY id DESC LIMIT 1"
+  ).first<{ name: string; started_date: string }>();
 
-  return json({ error: null, player, season_name: season?.name ?? null });
+  // The player's tips in this season's evaluated rounds only — open contests
+  // stay hidden. Movies with zero revenue have no meaningful relative error.
+  const tips = await context.env.DB.prepare(
+    `SELECT g.guessed_revenue AS guess, m.actual_revenue AS actual
+       FROM guesses g
+       JOIN rounds r ON r.id = g.round_id
+       JOIN movies m ON m.id = g.movie_id
+      WHERE g.user_id = ?1
+        AND r.evaluated_date IS NOT NULL
+        AND r.evaluated_date >= ?2
+        AND g.guessed_revenue IS NOT NULL
+        AND m.actual_revenue > 0`
+  ).bind(playerId, season?.started_date ?? "").all<{ guess: number; actual: number }>();
+
+  return json({
+    error: null,
+    player,
+    season_name: season?.name ?? null,
+    stats: tipStats(tips.results)
+  });
+}
+
+// Median rather than mean: one tiny movie tipped 5x too high would otherwise
+// dominate the number.
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function tipStats(tips: { guess: number; actual: number }[]) {
+  if (tips.length === 0) {
+    return { tips: 0, median_error: null, over: 0, under: 0 };
+  }
+  return {
+    tips: tips.length,
+    median_error: median(tips.map((tip) => Math.abs(tip.guess - tip.actual) / tip.actual)),
+    over: tips.filter((tip) => tip.guess > tip.actual).length,
+    under: tips.filter((tip) => tip.guess < tip.actual).length
+  };
 }
