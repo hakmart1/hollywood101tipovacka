@@ -50,13 +50,16 @@ interface LeaderboardProps {
   highlightNickname?: string | null;
   limit?: number;
   showCoins?: boolean;
+  // Rank movement makes no sense for a finished season's final standings.
+  showChange?: boolean;
 }
 
 export default function Leaderboard({
   entries,
   highlightNickname,
   limit,
-  showCoins = true
+  showCoins = true,
+  showChange = true
 }: LeaderboardProps) {
   const rows = limit ? entries.slice(0, limit) : entries;
   return (
@@ -64,7 +67,7 @@ export default function Leaderboard({
       <thead>
         <tr>
           <th>#</th>
-          <th>Změna</th>
+          {showChange ? <th>Změna</th> : null}
           <th>Hráč</th>
           {showCoins ? <th>Imfcoiny</th> : null}
         </tr>
@@ -76,7 +79,7 @@ export default function Leaderboard({
             className={entry.nickname === highlightNickname ? "is-me" : undefined}
           >
             <td>{entry.rank}</td>
-            <td>{renderChange(entry.previous_rank, entry.rank)}</td>
+            {showChange ? <td>{renderChange(entry.previous_rank, entry.rank)}</td> : null}
             <td>
               <PlayerCell
                 nickname={entry.nickname}

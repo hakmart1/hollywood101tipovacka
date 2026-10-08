@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import AdminCodesPage from "./AdminCodesPage";
 import AdminContestsPage from "./AdminContestsPage";
+import AdminSeasonsPage from "./AdminSeasonsPage";
 import HomeContests from "./HomeContests";
 import HomeResults from "./HomeResults";
 import LeaderboardPage from "./LeaderboardPage";
@@ -53,9 +54,10 @@ type Route =
   | "history"
   | "leaderboard"
   | "admin-codes"
-  | "admin-contests";
+  | "admin-contests"
+  | "admin-seasons";
 
-const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests"];
+const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests", "admin-seasons"];
 
 const defaultSignupForm = {
   email: "",
@@ -79,6 +81,9 @@ function readRoute(): Route {
   }
   if (hash === "#/admin/contests") {
     return "admin-contests";
+  }
+  if (hash === "#/admin/seasons") {
+    return "admin-seasons";
   }
   if (hash === "#/rules") {
     return "rules";
@@ -509,6 +514,9 @@ export default function App() {
               <a href="#/admin/codes" className={route === "admin-codes" ? "active" : ""}>
                 Aktivační kódy
               </a>
+              <a href="#/admin/seasons" className={route === "admin-seasons" ? "active" : ""}>
+                Sezóny
+              </a>
             </nav>
             {route === "admin-codes" ? (
               <AdminCodesPage
@@ -519,6 +527,9 @@ export default function App() {
             ) : null}
             {route === "admin-contests" ? (
               <AdminContestsPage onMessage={setOutput} timezone={currentUser.timezone} />
+            ) : null}
+            {route === "admin-seasons" ? (
+              <AdminSeasonsPage onMessage={setOutput} timezone={currentUser.timezone} />
             ) : null}
           </section>
         ) : null}

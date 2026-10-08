@@ -183,6 +183,15 @@ export default function RulesPage() {
         <li>Ostatní v nejlepších 20 % způsobilých hráčů: <strong>+50 000</strong></li>
       </ul>
 
+      <h3>Sezóny</h3>
+      <ul>
+        <li>Hra běží v sezónách. Na konci sezóny se konečné pořadí uloží do historie žebříčku.</li>
+        <li>
+          S novou sezónou všichni hráči začínají znovu se stejným rozpočtem{" "}
+          <strong>2 000 000</strong> Imfcoinů.
+        </li>
+      </ul>
+
       <h3>Imfcoiny a záchranné balíčky</h3>
       <ul>
         <li>Nově aktivované účty začínají s <strong>2 000 000</strong> Imfcoiny.</li>
