@@ -37,11 +37,12 @@ interface LeaderboardPageProps {
   highlightNickname: string | null;
 }
 
+// Seasons as an accordion, styled like the results archive: the current season
+// (live leaderboard) is open by default, past seasons show their final standings.
 export default function LeaderboardPage({ onMessage, highlightNickname }: LeaderboardPageProps) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
-  // "current" = live leaderboard; otherwise the id of a finished season.
-  const [selected, setSelected] = useState<"current" | number>("current");
+  const [openId, setOpenId] = useState<number | null>(null);
   const [history, setHistory] = useState<Record<number, LeaderboardEntry[]>>({});
 
   useEffect(() => {
@@ -63,21 +64,23 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
       return;
     }
 
+    const list = seasonsPayload.seasons || [];
     setLeaderboard(payload.leaderboard || []);
-    setSeasons(seasonsPayload.seasons || []);
+    setSeasons(list);
+    setOpenId(list.find((season) => season.ended_date === null)?.id ?? null);
   }
 
-  async function selectSeason(value: string) {
-    if (value === "current") {
-      setSelected("current");
+  async function toggle(season: Season) {
+    if (openId === season.id) {
+      setOpenId(null);
       return;
     }
-    const seasonId = Number(value);
-    setSelected(seasonId);
-    if (history[seasonId]) {
+    setOpenId(season.id);
+    if (season.ended_date === null || history[season.id]) {
       return;
     }
-    const response = await fetch(`/api/seasons/${seasonId}`, { headers: { Accept: "application/json" } });
+
+    const response = await fetch(`/api/seasons/${season.id}`, { headers: { Accept: "application/json" } });
     const payload = (await response.json()) as StandingsResponse;
     if (!response.ok || payload.error) {
       onMessage(payload.error || "Žebříček sezóny se nepodařilo načíst.");
@@ -85,7 +88,7 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
     }
     setHistory((current) => ({
       ...current,
-      [seasonId]: (payload.standings || []).map((standing) => ({
+      [season.id]: (payload.standings || []).map((standing) => ({
         nickname: standing.nickname,
         rank: standing.rank,
         previous_rank: null,
@@ -96,59 +99,57 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
     }));
   }
 
+  function renderStandings(season: Season) {
+    const isCurrent = season.ended_date === null;
+    const entries = isCurrent ? leaderboard : history[season.id];
+
+    if (!entries) {
+      return <Loader />;
+    }
+    if (entries.length === 0) {
+      return (
+        <p className="guess-hint">
+          {isCurrent ? "Pořadí sezóny bude k dispozici po prvním vyhodnocení." : "V této sezóně nikdo nehrál."}
+        </p>
+      );
+    }
+    return <Leaderboard entries={entries} highlightNickname={highlightNickname} showChange={isCurrent} />;
+  }
+
   if (leaderboard === null) {
     return <Loader />;
   }
-
-  const currentSeason = seasons.find((season) => season.ended_date === null) ?? null;
-  const pastSeasons = seasons.filter((season) => season.ended_date !== null);
-  const isCurrent = selected === "current";
-  const entries = typeof selected === "number" ? history[selected] : leaderboard;
-  const selectedSeason =
-    typeof selected === "number" ? seasons.find((season) => season.id === selected) : currentSeason;
 
   return (
     <section className="leaderboard-page">
       <h2>Žebříček hráčů</h2>
 
-      {pastSeasons.length > 0 ? (
-        <div className="season-picker">
-          <label htmlFor="season-select">Sezóna</label>
-          <select
-            id="season-select"
-            value={isCurrent ? "current" : String(selected)}
-            onChange={(event) => void selectSeason(event.target.value)}
-          >
-            <option value="current">{currentSeason ? `${currentSeason.name} (aktuální)` : "Aktuální sezóna"}</option>
-            {pastSeasons.map((season) => (
-              <option key={season.id} value={season.id}>
-                {season.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : currentSeason ? (
-        <p className="season-caption">{currentSeason.name}</p>
-      ) : null}
-
-      {!isCurrent && selectedSeason?.ended_date ? (
-        <p className="season-caption">
-          Konečné pořadí · sezóna ukončena {formatDateTime(selectedSeason.ended_date)}
-        </p>
-      ) : null}
-
-      {entries === undefined ? (
-        <Loader />
-      ) : entries.length === 0 ? (
-        <p className="guess-hint">
-          {isCurrent && pastSeasons.length > 0
-            ? "Pořadí nové sezóny bude k dispozici po prvním vyhodnocení."
-            : "Zatím žádní hráči."}
-        </p>
+      {seasons.length === 0 ? (
+        // Seasons couldn't be loaded — still show the live leaderboard.
+        leaderboard.length === 0 ? (
+          <p className="guess-hint">Zatím žádní hráči.</p>
+        ) : (
+          <div className="card">
+            <Leaderboard entries={leaderboard} highlightNickname={highlightNickname} />
+          </div>
+        )
       ) : (
-        <div className="card">
-          <Leaderboard entries={entries} highlightNickname={highlightNickname} showChange={isCurrent} />
-        </div>
+        <ul className="archive-list">
+          {seasons.map((season) => (
+            <li key={season.id}>
+              <button type="button" className="archive-row" onClick={() => void toggle(season)}>
+                <span className="archive-title">{season.name}</span>
+                <span className="archive-meta">
+                  {season.ended_date === null
+                    ? `Aktuální sezóna · od ${formatDateTime(season.started_date)}`
+                    : `Konečné pořadí · ukončena ${formatDateTime(season.ended_date)}`}
+                </span>
+                <span className="archive-toggle">{openId === season.id ? "▲" : "▼"}</span>
+              </button>
+              {openId === season.id ? <div className="round-card">{renderStandings(season)}</div> : null}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
