@@ -39,16 +39,6 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     "SELECT COUNT(*) AS n FROM users WHERE rank IS NOT NULL AND status != 'deleted'"
   ).first<{ n: number }>();
 
-  // Final placings in ended seasons, with the size of each season's field.
-  const pastSeasons = await context.env.DB.prepare(
-    `SELECT s.id, s.name, st.rank,
-            (SELECT COUNT(*) FROM season_standings x WHERE x.season_id = s.id) AS players
-       FROM season_standings st
-       JOIN seasons s ON s.id = st.season_id
-      WHERE st.user_id = ?1 AND s.ended_date IS NOT NULL
-      ORDER BY s.id DESC`
-  ).bind(playerId).all<{ id: number; name: string; rank: number; players: number }>();
-
   // Tip stats describe the player, not a season, so they span all seasons.
   // Only evaluated rounds — open contests stay hidden. Movies with zero
   // revenue have no meaningful relative error.
@@ -67,7 +57,6 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     error: null,
     player,
     ranked_players: ranked?.n ?? 0,
-    past_seasons: pastSeasons.results,
     stats: tipStats(tips.results)
   });
 }

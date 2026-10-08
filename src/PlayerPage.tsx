@@ -22,25 +22,16 @@ interface TipStats {
   under: number;
 }
 
-interface PastSeason {
-  id: number;
-  name: string;
-  rank: number;
-  players: number;
-}
-
 interface PlayerResponse {
   error: string | null;
   player?: Player;
   ranked_players?: number;
-  past_seasons?: PastSeason[];
   stats?: TipStats;
 }
 
 interface ProfileData {
   player: Player;
   rankedPlayers: number;
-  pastSeasons: PastSeason[];
   stats: TipStats | null;
 }
 
@@ -52,13 +43,14 @@ interface PlayerPageProps {
 // Below this many tips the over/under split is mostly noise.
 const MIN_TIPS_FOR_STYLE = 5;
 
-function tipperStyle(stats: TipStats): { label: string; detail: string } | null {
+function tipperStyle(stats: TipStats): { icon: string; label: string; detail: string } | null {
   if (stats.tips < MIN_TIPS_FOR_STYLE) {
     return null;
   }
   const overShare = stats.over / stats.tips;
-  const label = overShare >= 0.6 ? "Optimista 📈" : overShare <= 0.4 ? "Pesimista 📉" : "Vyvážený ⚖️";
-  return { label, detail: `tipuje výš u ${stats.over} z ${stats.tips} filmů` };
+  const [icon, label] =
+    overShare >= 0.6 ? ["📈", "Optimista"] : overShare <= 0.4 ? ["📉", "Pesimista"] : ["⚖️", "Vyvážený"];
+  return { icon, label, detail: `tipuje výš u ${stats.over} z ${stats.tips} filmů` };
 }
 
 function formatPercent(ratio: number): string {
@@ -69,8 +61,8 @@ function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 }
 
-// Public profile of a player. Deliberately a set of cards so more sections
-// (achievements, stats) can be added later.
+// Public profile of a player: one header card (identity, tip stats, balance and
+// rank). The rest of the page is reserved for achievements.
 export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
   const [data, setData] = useState<ProfileData | "missing" | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -95,7 +87,6 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
       setData({
         player: payload.player,
         rankedPlayers: payload.ranked_players ?? 0,
-        pastSeasons: payload.past_seasons ?? [],
         stats: payload.stats ?? null
       });
     } catch {
@@ -117,7 +108,7 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
     );
   }
 
-  const { player, rankedPlayers, pastSeasons, stats } = data;
+  const { player, rankedPlayers, stats } = data;
   const style = stats ? tipperStyle(stats) : null;
   const avatar =
     player.avatar_url?.trim() ||
@@ -139,64 +130,40 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
             <span className="profile-meta">
               {player.activated_date ? `Hraje od ${formatDate(player.activated_date)}` : "Účet zatím není aktivovaný"}
             </span>
-          </div>
-        </div>
-        <BalanceCard balance={player.imf_coins_balance} />
-      </div>
-
-      <div className="user-card">
-        <h3 className="profile-section-title">Aktuální sezóna</h3>
-        <div className="profile-stats">
-          <div className="profile-stat">
-            <span className="profile-stat-value">
-              {player.rank !== null ? (
-                <>
-                  {player.rank}.<span className="profile-stat-of"> z {rankedPlayers}</span>
-                  <span className="profile-stat-change">{renderChange(player.previous_rank, player.rank)}</span>
-                </>
-              ) : (
-                "–"
-              )}
-            </span>
-            <span className="profile-stat-label">místo v žebříčku</span>
-          </div>
-        </div>
-        {player.rank === null ? (
-          <p className="guess-hint">Zatím bez umístění — pořadí se určuje při vyhodnocení tipovačky.</p>
-        ) : null}
-        {pastSeasons.length > 0 ? (
-          <p className="profile-past-seasons">
-            Minulé sezóny:{" "}
-            {pastSeasons.map((season, index) => (
-              <span key={season.id}>
-                {index > 0 ? " · " : ""}
-                {season.name} – {season.rank}. z {season.players}
-              </span>
-            ))}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="user-card">
-        <h3 className="profile-section-title">Statistiky tipů</h3>
-        {stats && stats.tips > 0 ? (
-          <div className="profile-stats">
-            <div className="profile-stat">
-              <span className="profile-stat-value">
-                {stats.median_error != null ? formatPercent(stats.median_error) : "–"}
-              </span>
-              <span className="profile-stat-label">typická odchylka tipu ({stats.tips} filmů)</span>
-            </div>
-            {style ? (
-              <div className="profile-stat">
-                <span className="profile-stat-value">{style.label}</span>
-                <span className="profile-stat-label">{style.detail}</span>
+            {stats && stats.tips > 0 ? (
+              <div className="profile-chips">
+                {stats.median_error != null ? (
+                  <span className="profile-chip" title={`Typická odchylka tipu (medián z ${stats.tips} filmů)`}>
+                    🎯 <strong>{formatPercent(stats.median_error)}</strong> typická odchylka
+                  </span>
+                ) : null}
+                {style ? (
+                  <span className="profile-chip" title={style.detail}>
+                    {style.icon} <strong>{style.label}</strong>
+                  </span>
+                ) : null}
               </div>
             ) : null}
           </div>
-        ) : (
-          <p className="guess-hint">Zatím žádné vyhodnocené tipy.</p>
-        )}
+        </div>
+        <BalanceCard
+          balance={player.imf_coins_balance}
+          aside={
+            <div className="profile-rank">
+              <span className="profile-rank-value">
+                {player.rank !== null ? (
+                  <>
+                    {player.rank}.<span className="profile-rank-of"> z {rankedPlayers}</span>
+                    <span className="profile-rank-change">{renderChange(player.previous_rank, player.rank)}</span>
+                  </>
+                ) : (
+                  "–"
+                )}
+              </span>
+              <span className="balance-label">místo v žebříčku</span>
+            </div>
+          }
+        />
       </div>
     </section>
   );

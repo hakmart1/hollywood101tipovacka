@@ -1311,6 +1311,7 @@ button.linklike:hover {
 
 /* Mobile: tighten cards and tables so more fits before scrolling kicks in. */
 @media (max-width: 640px) {
+
   .card,
   .user-card,
   .round-card,
@@ -1526,48 +1527,72 @@ button.linklike:hover {
   font-size: 0.9rem;
 }
 
-.user-card h3.profile-section-title {
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
-  color: #b8860b;
-}
 
-.profile-stats {
+
+
+
+
+.profile-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
 }
 
-.profile-stat {
+.profile-chip {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 0.8rem;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.balance-aside {
+  margin-left: auto;
+  padding-left: 1.25rem;
+  border-left: 1px solid #f0d488;
+}
+
+.profile-rank {
   display: flex;
   flex-direction: column;
 }
 
-.profile-stat-value {
-  font-size: 1.6rem;
-  font-weight: 700;
+.profile-rank-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #17181f;
+  white-space: nowrap;
 }
 
-.profile-stat-of {
+.profile-rank-of {
   font-size: 1rem;
   font-weight: 500;
   color: #6b7280;
 }
 
-.profile-past-seasons {
-  margin: 0.75rem 0 0;
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.profile-stat-change {
-  margin-left: 0.5rem;
+.profile-rank-change {
+  margin-left: 0.4rem;
   font-size: 0.9rem;
   font-weight: 600;
   vertical-align: middle;
 }
 
-.profile-stat-label {
-  font-size: 0.8rem;
-  color: #6b7280;
+@media (max-width: 640px) {
+  /* Rank drops under the balance on narrow screens. */
+  .balance-card:has(.balance-aside) {
+    flex-wrap: wrap;
+  }
+
+  .balance-aside {
+    flex-basis: 100%;
+    margin-left: 0;
+    padding: 0.75rem 0 0;
+    border-left: none;
+    border-top: 1px solid #f0d488;
+  }
 }
+
+
+

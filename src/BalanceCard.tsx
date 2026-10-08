@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import imfCoinImage from "./imf.webp";
 
 function CoinIcon() {
@@ -52,8 +53,8 @@ function CoinIcon() {
 }
 
 // The gold "Imfcoiny" balance card (coin + big number), shared by Můj účet and
-// the public player profile.
-export default function BalanceCard({ balance }: { balance: number }) {
+// the public player profile. `aside` is shown on the right (e.g. the rank).
+export default function BalanceCard({ balance, aside }: { balance: number; aside?: ReactNode }) {
   return (
     <div className="balance-card">
       <CoinIcon />
@@ -61,6 +62,7 @@ export default function BalanceCard({ balance }: { balance: number }) {
         <span className="balance-label">Imfcoiny</span>
         <span className="balance-value">{balance.toLocaleString("en-US")}</span>
       </div>
+      {aside ? <div className="balance-aside">{aside}</div> : null}
     </div>
   );
 }
