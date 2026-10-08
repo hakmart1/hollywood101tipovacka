@@ -25,7 +25,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   );
 
   if (!session) {
-    return json({ user: null, error: null });
+    return json({ user: null, error: null, environment: context.env.APP_ENV || "production" });
   }
 
   const user = await context.env.DB.prepare(
@@ -35,10 +35,10 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     .first<UserRecord>();
 
   if (!user) {
-    return json({ user: null, error: null });
+    return json({ user: null, error: null, environment: context.env.APP_ENV || "production" });
   }
 
-  return json({ user, error: null });
+  return json({ user, error: null, environment: context.env.APP_ENV || "production" });
 }
 
 export async function onRequestPatch(context: PagesContext): Promise<Response> {

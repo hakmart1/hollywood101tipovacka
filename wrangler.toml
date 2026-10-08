@@ -17,3 +17,8 @@ binding = "DB"
 database_name = "hollywood101tipovacka-development"
 database_id = "46a0a223-d046-4bda-a3ae-01d5e88a9ef1"
 migrations_dir = "db/migrations"
+
+# Shown as an environment banner in the UI (production has no APP_ENV, so the
+# banner never appears there).
+[env.preview.vars]
+APP_ENV = "development"

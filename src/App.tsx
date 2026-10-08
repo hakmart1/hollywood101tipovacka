@@ -155,6 +155,8 @@ export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Deployment environment reported by /api/me ("production" when unset).
+  const [environment, setEnvironment] = useState("production");
   const [output, setOutput] = useState("");
   const [signupOpen, setSignupOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -229,7 +231,12 @@ export default function App() {
         }
       });
 
-      const payload = (await response.json()) as { user?: User | null; error: string | null };
+      const payload = (await response.json()) as {
+        user?: User | null;
+        error: string | null;
+        environment?: string;
+      };
+      setEnvironment(payload.environment || "production");
 
       if (!response.ok) {
         setOutput(payload.error || "Nepodařilo se načíst přihlášení.");
@@ -407,6 +414,12 @@ export default function App() {
 
   return (
     <>
+      {environment !== "production" ? (
+        <div className="env-banner" role="note">
+          {environment === "local" ? "LOKÁLNÍ prostředí" : "DEV prostředí"} · testovací data, nejde o
+          produkci
+        </div>
+      ) : null}
       <header className="app-header">
         <a className="brand" href="#/">
           <BrandLogo className="brand-logo" />

@@ -9,6 +9,8 @@ export interface Env {
   MAILJET_SECRET_KEY?: string;
   // Verified sender address; defaults to hollywood101tipovacka@gmail.com when unset.
   EMAIL_FROM?: string;
+  // "development" on preview deployments, "local" in wrangler pages dev; unset in production.
+  APP_ENV?: string;
 }
 
 export interface SessionPayload {

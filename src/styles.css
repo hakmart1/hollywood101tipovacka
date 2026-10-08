@@ -1415,3 +1415,15 @@ button.linklike:hover {
   font-size: 0.9rem;
   color: #6b7280;
 }
+
+/* Non-production environment banner (driven by APP_ENV via /api/me). */
+.env-banner {
+  background: repeating-linear-gradient(-45deg, #c0392b, #c0392b 12px, #a93226 12px, #a93226 24px);
+  color: #fff;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+}
