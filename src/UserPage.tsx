@@ -266,6 +266,9 @@ export default function UserPage({
           <div className="account-identity">
             <span className="account-nickname">{user.nickname}</span>
             <span className="account-email">{user.email}</span>
+            <a className="account-avatar-hint" href={`#/hrac/${user.id}`}>
+              Zobrazit můj veřejný profil →
+            </a>
           </div>
           <div className="account-actions">
             <button type="button" className="ghost" onClick={() => setPwOpen((open) => !open)}>

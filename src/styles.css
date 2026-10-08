@@ -1464,3 +1464,90 @@ button.linklike:hover {
 .data-table tbody tr:has(> td.table-empty):hover {
   background: transparent;
 }
+
+/* Player names linking to public profiles. */
+.player-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.player-link:hover {
+  text-decoration: underline;
+  color: #b8860b;
+}
+
+/* Public player profile. */
+.player-page {
+  max-width: 42rem;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-avatar {
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: #17181f;
+  color: #f6c945;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-card h2.profile-name {
+  margin: 0;
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-meta {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.user-card h3.profile-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  color: #b8860b;
+}
+
+.profile-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.profile-stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+}

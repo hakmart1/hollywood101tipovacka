@@ -24,6 +24,7 @@ interface SeasonsResponse {
 interface StandingsResponse {
   error: string | null;
   standings?: {
+    user_id: number | null;
     rank: number;
     nickname: string;
     balance: number;
@@ -89,6 +90,7 @@ export default function LeaderboardPage({ onMessage, highlightNickname }: Leader
     setHistory((current) => ({
       ...current,
       [season.id]: (payload.standings || []).map((standing) => ({
+        user_id: standing.user_id,
         nickname: standing.nickname,
         rank: standing.rank,
         previous_rank: null,
