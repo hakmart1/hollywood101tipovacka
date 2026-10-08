@@ -15,7 +15,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const player = await context.env.DB.prepare(
-    `SELECT id, nickname, avatar_hash, avatar_url, activated_date, rank, rank_balance
+    `SELECT id, nickname, avatar_hash, avatar_url, activated_date, imf_coins_balance, rank, rank_balance
        FROM users
       WHERE id = ?1 AND status != 'deleted'`
   ).bind(playerId).first<{
@@ -24,6 +24,7 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     avatar_hash: string | null;
     avatar_url: string | null;
     activated_date: string | null;
+    imf_coins_balance: number;
     rank: number | null;
     rank_balance: number | null;
   }>();

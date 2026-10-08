@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import BalanceCard from "./BalanceCard";
 import Loader from "./Loader";
-import { formatCoins } from "./RoundResultView";
 
 interface Player {
   id: number;
@@ -8,6 +8,7 @@ interface Player {
   avatar_hash: string | null;
   avatar_url: string | null;
   activated_date: string | null;
+  imf_coins_balance: number;
   rank: number | null;
   rank_balance: number | null;
 }
@@ -77,20 +78,23 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
 
   return (
     <section className="player-page">
-      <div className="user-card profile-card">
-        <div className="profile-avatar">
-          {avatar && !avatarFailed ? (
-            <img src={avatar} alt="" onError={() => setAvatarFailed(true)} />
-          ) : (
-            <span aria-hidden="true">{player.nickname.slice(0, 1).toUpperCase()}</span>
-          )}
+      <div className="user-card">
+        <div className="profile-header">
+          <div className="profile-avatar">
+            {avatar && !avatarFailed ? (
+              <img src={avatar} alt="" onError={() => setAvatarFailed(true)} />
+            ) : (
+              <span aria-hidden="true">{player.nickname.slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="profile-identity">
+            <h2 className="profile-name">{player.nickname}</h2>
+            <span className="profile-meta">
+              {player.activated_date ? `Hraje od ${formatDate(player.activated_date)}` : "Účet zatím není aktivovaný"}
+            </span>
+          </div>
         </div>
-        <div className="profile-identity">
-          <h2 className="profile-name">{player.nickname}</h2>
-          <span className="profile-meta">
-            {player.activated_date ? `Hraje od ${formatDate(player.activated_date)}` : "Účet zatím není aktivovaný"}
-          </span>
-        </div>
+        <BalanceCard balance={player.imf_coins_balance} />
       </div>
 
       <div className="user-card">
@@ -99,12 +103,6 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
           <div className="profile-stat">
             <span className="profile-stat-value">{player.rank !== null ? `${player.rank}.` : "–"}</span>
             <span className="profile-stat-label">místo v žebříčku</span>
-          </div>
-          <div className="profile-stat">
-            <span className="profile-stat-value">
-              {player.rank_balance !== null ? formatCoins(player.rank_balance) : "–"}
-            </span>
-            <span className="profile-stat-label">Imfcoinů v žebříčku</span>
           </div>
         </div>
         {player.rank === null ? (
