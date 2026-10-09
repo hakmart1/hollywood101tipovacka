@@ -1293,6 +1293,39 @@ a.account-nickname:hover {
   gap: 0.1rem;
 }
 
+/* Desktop column: a fixed slot per tier so rows line up. */
+.achievement-badges.is-aligned {
+  gap: 0.25rem;
+}
+
+.achievement-badges.is-aligned .achievement-badge {
+  min-width: 2.6em;
+}
+
+.achievement-badge.is-zero {
+  justify-content: center;
+  opacity: 0.35;
+}
+
+.col-achievements {
+  white-space: nowrap;
+}
+
+/* Under the name only on mobile, where the column is hidden. */
+.achievement-badges.mobile-only {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .col-achievements {
+    display: none;
+  }
+
+  .achievement-badges.mobile-only {
+    display: inline-flex;
+  }
+}
+
 .player-avatar {
   position: relative;
   flex: none;

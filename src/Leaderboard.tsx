@@ -37,7 +37,7 @@ function PlayerCell({
       </span>
       <span className="player-cell-main">
         <PlayerLink userId={userId} nickname={nickname} />
-        <AchievementBadges tally={achievements} />
+        <AchievementBadges tally={achievements} className="mobile-only" />
       </span>
     </span>
   );
@@ -77,7 +77,9 @@ export default function Leaderboard({
   emptyText = "Zatím žádní hráči."
 }: LeaderboardProps) {
   const rows = limit ? entries.slice(0, limit) : entries;
-  const columnCount = 2 + (showChange ? 1 : 0) + (showCoins ? 1 : 0);
+  // Only the live leaderboard carries achievement totals (not archived seasons).
+  const showAchievements = rows.some((entry) => entry.achievements);
+  const columnCount = 2 + (showChange ? 1 : 0) + (showCoins ? 1 : 0) + (showAchievements ? 1 : 0);
   return (
     <table className="data-table">
       <thead>
@@ -85,6 +87,7 @@ export default function Leaderboard({
           <th>#</th>
           {showChange ? <th>Změna</th> : null}
           <th>Hráč</th>
+          {showAchievements ? <th className="col-achievements">Úspěchy</th> : null}
           {showCoins ? <th>Imfcoiny</th> : null}
         </tr>
       </thead>
@@ -112,6 +115,11 @@ export default function Leaderboard({
                 achievements={entry.achievements}
               />
             </td>
+            {showAchievements ? (
+              <td className="col-achievements">
+                <AchievementBadges tally={entry.achievements} aligned />
+              </td>
+            ) : null}
             {showCoins ? <td>{formatCoins(entry.rank_balance ?? 0)}</td> : null}
           </tr>
         ))}

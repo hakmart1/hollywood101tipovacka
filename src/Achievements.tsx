@@ -85,21 +85,40 @@ export default function Achievements({ achievements }: { achievements: Achieveme
   );
 }
 
-// Compact per-tier counts for the leaderboard; only tiers with something in.
-export function AchievementBadges({ tally }: { tally?: Partial<Record<AchievementTier, number>> }) {
+// Compact per-tier counts for the leaderboard. `aligned` (the desktop column)
+// keeps a slot for every tier so rows line up, with a faint dot for zero;
+// otherwise (under the name on mobile) only tiers with something in.
+export function AchievementBadges({
+  tally,
+  aligned = false,
+  className = ""
+}: {
+  tally?: Partial<Record<AchievementTier, number>>;
+  aligned?: boolean;
+  className?: string;
+}) {
   const present = TIERS.filter(({ tier }) => (tally?.[tier] ?? 0) > 0);
-  if (!tally || present.length === 0) {
+  if (!tally || (!aligned && present.length === 0)) {
     return null;
   }
-  const title = present.map(({ tier, label }) => `${label}: ${tally[tier]}`).join(", ");
+  const title = present.length
+    ? `Úspěchy – ${present.map(({ tier, label }) => `${label}: ${tally[tier]}`).join(", ")}`
+    : "Zatím žádné úspěchy";
   return (
-    <span className="achievement-badges" title={`Úspěchy – ${title}`}>
-      {present.map(({ tier, medal }) => (
-        <span key={tier} className="achievement-badge">
-          {medal}
-          {tally[tier]}
-        </span>
-      ))}
+    <span className={`achievement-badges${aligned ? " is-aligned" : ""} ${className}`.trim()} title={title}>
+      {(aligned ? TIERS : present).map(({ tier, medal }) => {
+        const count = tally[tier] ?? 0;
+        return count > 0 ? (
+          <span key={tier} className="achievement-badge">
+            {medal}
+            {count}
+          </span>
+        ) : (
+          <span key={tier} className="achievement-badge is-zero" aria-hidden="true">
+            ·
+          </span>
+        );
+      })}
     </span>
   );
 }
