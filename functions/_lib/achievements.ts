@@ -25,18 +25,18 @@ export interface AchievementDef {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "season_champion", tier: "diamond", icon: "⭐", name: "Hvězda na chodníku slávy", description: "1. místo v sezóně" },
-  { key: "crystal_ball", tier: "diamond", icon: "🔮", name: "Křišťálová koule", description: "Celková odchylka v tipovačce pod 1 %" },
+  { key: "crystal_ball", tier: "diamond", icon: "🔮", name: "Křišťálová koule", description: "Celková odchylka v tipovačce pod 5 %" },
   { key: "clean_sweep", tier: "diamond", icon: "🧹", name: "Čistý stůl", description: "1. místo u všech filmů jedné tipovačky" },
   { key: "hattrick", tier: "diamond", icon: "🎩", name: "Hattrick", description: "Vyhrát 3 tipovačky v řadě" },
-  { key: "money_truck", tier: "diamond", icon: "🚚", name: "Dodávka s penězi", description: "Čistý zisk z tipovačky aspoň 1,5 M" },
+  { key: "money_truck", tier: "diamond", icon: "🚚", name: "Dodávka s penězi", description: "Čistý zisk z tipovačky aspoň 1 M" },
   { key: "season_pass", tier: "diamond", icon: "🎟️", name: "Permanentka", description: "50 tipovaček v řadě" },
   { key: "superstar", tier: "gold", icon: "🌟", name: "Superstar", description: "1. místo v tipovačce" },
   { key: "season_second", tier: "gold", icon: "🎞️", name: "Druhý v titulcích", description: "2. místo v sezóně" },
   { key: "season_third", tier: "gold", icon: "📸", name: "Na červeném koberci", description: "3. místo v sezóně" },
   { key: "nostradamus", tier: "gold", icon: "🎯", name: "Nostradamus", description: "Tip přesně na skutečné tržby" },
+  { key: "perfect_weekend", tier: "gold", icon: "✨", name: "Dokonalý víkend", description: "Všechny tipy v tipovačce s odchylkou pod 20 %" },
   { key: "silver_screen", tier: "silver", icon: "🎬", name: "Stříbrné plátno", description: "2. místo v tipovačce" },
   { key: "lead_role", tier: "silver", icon: "🎭", name: "Hlavní role", description: "1. místo u filmu" },
-  { key: "perfect_weekend", tier: "silver", icon: "✨", name: "Dokonalý víkend", description: "Všechny tipy v tipovačce s odchylkou pod 10 %" },
   { key: "bonus_hunter", tier: "silver", icon: "🏹", name: "Lovec bonusů", description: "Vyhrát bonusovou tipovačku" },
   { key: "subscriber", tier: "silver", icon: "📺", name: "Předplatitel", description: "10 tipovaček v řadě" },
   { key: "bronze_clapper", tier: "bronze", icon: "🎬", name: "Bronzová klapka", description: "3. místo v tipovačce" },
@@ -73,9 +73,9 @@ export function isRepeatable(def: AchievementDef): boolean {
 const STREAKS: [number, string][] = [[3, "regular_viewer"], [10, "subscriber"], [50, "season_pass"]];
 const FORGETFUL_STREAK = 10;
 const HATTRICK_WINS = 3;
-const CRYSTAL_BALL_ERROR = 0.01;
-const PERFECT_WEEKEND_ERROR = 0.1;
-const MONEY_TRUCK_PER_MOVIE = 300_000; // 1.5M at 5 movies
+const CRYSTAL_BALL_ERROR = 0.05;
+const PERFECT_WEEKEND_ERROR = 0.2;
+const MONEY_TRUCK_PER_MOVIE = 200_000; // 1M at 5 movies
 const FLOP_LOSS = 250_000;
 const WAY_OFF_FACTOR = 5;
 const BIASED_AVG_ERROR = 0.3;
