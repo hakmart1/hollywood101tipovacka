@@ -373,3 +373,28 @@ export async function seasonAchievementStatements(
     awardStatement(env, row.id, keys[row.rank - 1], `season:${season.id}`, season.name, now)
   );
 }
+
+// Earned achievements per player and tier, for the leaderboard badges.
+export async function achievementTallies(
+  env: Pick<Env, "DB">,
+  userIds: number[]
+): Promise<Map<number, Partial<Record<AchievementTier, number>>>> {
+  const tallies = new Map<number, Partial<Record<AchievementTier, number>>>();
+  if (userIds.length === 0) {
+    return tallies;
+  }
+  const wanted = new Set(userIds);
+  const rows = await env.DB.prepare(
+    "SELECT user_id, achievement_key, COUNT(*) AS n FROM user_achievements GROUP BY user_id, achievement_key"
+  ).all<{ user_id: number; achievement_key: string; n: number }>();
+  for (const row of rows.results) {
+    const def = BY_KEY.get(row.achievement_key);
+    if (!def || !wanted.has(row.user_id)) {
+      continue;
+    }
+    const tally = tallies.get(row.user_id) ?? {};
+    tally[def.tier] = (tally[def.tier] ?? 0) + row.n;
+    tallies.set(row.user_id, tally);
+  }
+  return tallies;
+}

@@ -12,7 +12,7 @@ export interface Achievement {
   last_detail: string | null;
 }
 
-const TIERS: { tier: AchievementTier; medal: string; label: string }[] = [
+export const TIERS: { tier: AchievementTier; medal: string; label: string }[] = [
   { tier: "diamond", medal: "💎", label: "Diamantové" },
   { tier: "gold", medal: "🏆", label: "Zlaté" },
   { tier: "silver", medal: "🥈", label: "Stříbrné" },
@@ -82,5 +82,24 @@ export default function Achievements({ achievements }: { achievements: Achieveme
         </section>
       ))}
     </div>
+  );
+}
+
+// Compact per-tier counts for the leaderboard; only tiers with something in.
+export function AchievementBadges({ tally }: { tally?: Partial<Record<AchievementTier, number>> }) {
+  const present = TIERS.filter(({ tier }) => (tally?.[tier] ?? 0) > 0);
+  if (!tally || present.length === 0) {
+    return null;
+  }
+  const title = present.map(({ tier, label }) => `${label}: ${tally[tier]}`).join(", ");
+  return (
+    <span className="achievement-badges" title={`Úspěchy – ${title}`}>
+      {present.map(({ tier, medal }) => (
+        <span key={tier} className="achievement-badge">
+          {medal}
+          {tally[tier]}
+        </span>
+      ))}
+    </span>
   );
 }

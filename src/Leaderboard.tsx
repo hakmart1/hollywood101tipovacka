@@ -1,3 +1,5 @@
+import { AchievementBadges } from "./Achievements";
+import type { AchievementTier } from "./Achievements";
 import PlayerLink from "./PlayerLink";
 import { formatCoins } from "./RoundResultView";
 
@@ -9,18 +11,21 @@ export interface LeaderboardEntry {
   rank_balance: number | null;
   avatar_hash?: string | null;
   avatar_url?: string | null;
+  achievements?: Partial<Record<AchievementTier, number>>;
 }
 
 function PlayerCell({
   userId,
   nickname,
   avatarHash,
-  avatarUrl
+  avatarUrl,
+  achievements
 }: {
   userId?: number | null;
   nickname: string;
   avatarHash?: string | null;
   avatarUrl?: string | null;
+  achievements?: Partial<Record<AchievementTier, number>>;
 }) {
   // A custom profile image wins; otherwise fall back to the Gravatar hash.
   const src = avatarUrl?.trim() || (avatarHash ? `https://www.gravatar.com/avatar/${avatarHash}?s=48&d=blank` : null);
@@ -30,7 +35,10 @@ function PlayerCell({
         {src ? <img src={src} alt="" loading="lazy" /> : null}
         <span className="player-avatar-fallback">{nickname.slice(0, 1).toUpperCase()}</span>
       </span>
-      <PlayerLink userId={userId} nickname={nickname} />
+      <span className="player-cell-main">
+        <PlayerLink userId={userId} nickname={nickname} />
+        <AchievementBadges tally={achievements} />
+      </span>
     </span>
   );
 }
@@ -101,6 +109,7 @@ export default function Leaderboard({
                 nickname={entry.nickname}
                 avatarHash={entry.avatar_hash}
                 avatarUrl={entry.avatar_url}
+                achievements={entry.achievements}
               />
             </td>
             {showCoins ? <td>{formatCoins(entry.rank_balance ?? 0)}</td> : null}

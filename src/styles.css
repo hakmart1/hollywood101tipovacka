@@ -1271,6 +1271,28 @@ a.account-nickname:hover {
   gap: 0.5rem;
 }
 
+.player-cell-main {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+}
+
+.achievement-badges {
+  display: inline-flex;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
 .player-avatar {
   position: relative;
   flex: none;

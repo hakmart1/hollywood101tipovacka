@@ -1,3 +1,4 @@
+import { achievementTallies } from "../../_lib/achievements";
 import { json } from "../../_lib/auth";
 import { buildRoundResult } from "../../_lib/results";
 import type { ResultRoundInput } from "../../_lib/results";
@@ -40,5 +41,17 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     rank_balance: number | null;
   }>();
 
-  return json({ error: null, results, leaderboard: leaderboard.results });
+  const tallies = await achievementTallies(
+    context.env,
+    leaderboard.results.map((entry) => entry.user_id)
+  );
+
+  return json({
+    error: null,
+    results,
+    leaderboard: leaderboard.results.map((entry) => ({
+      ...entry,
+      achievements: tallies.get(entry.user_id) ?? {}
+    }))
+  });
 }
