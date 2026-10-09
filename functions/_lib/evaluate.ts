@@ -1,4 +1,4 @@
-import { achievementsStart, roundAchievementStatements } from "./achievements";
+import { roundAchievementStatements } from "./achievements";
 import { computeRoundScoring } from "./scoring";
 import type { Env } from "./types";
 
@@ -150,27 +150,23 @@ export async function evaluateRound(
   });
 
   // Achievements go into the same batch, so they land atomically with the
-  // payouts. Not awarded before the achievement era starts.
-  const since = await achievementsStart(env);
-  if (since) {
-    statements.push(
-      ...(await roundAchievementStatements(env, {
-        round: { id: round.id, title: round.title, type: round.type },
-        movies: movies.results,
-        guesses: guesses.results,
-        scoring,
-        payoutByUser: userTotals,
-        rankMoves: ranked.map((player, index) => ({
-          userId: player.id,
-          oldRank: player.oldRank,
-          newRank: index + 1
-        })),
-        activeUserIds: new Set(playerRows.results.map((player) => player.id)),
-        since,
-        now
-      }))
-    );
-  }
+  // payouts.
+  statements.push(
+    ...(await roundAchievementStatements(env, {
+      round: { id: round.id, title: round.title, type: round.type },
+      movies: movies.results,
+      guesses: guesses.results,
+      scoring,
+      payoutByUser: userTotals,
+      rankMoves: ranked.map((player, index) => ({
+        userId: player.id,
+        oldRank: player.oldRank,
+        newRank: index + 1
+      })),
+      activeUserIds: new Set(playerRows.results.map((player) => player.id)),
+      now
+    }))
+  );
 
   statements.push(
     env.DB.prepare(

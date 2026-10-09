@@ -1,4 +1,3 @@
-import { achievementTallies } from "../../_lib/achievements";
 import { json } from "../../_lib/auth";
 import { buildRoundResult } from "../../_lib/results";
 import type { ResultRoundInput } from "../../_lib/results";
@@ -26,7 +25,9 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   // don't move anyone). Includes the admin, who plays like any other player.
   // previous_rank gives the movement since the evaluation before that.
   const leaderboard = await context.env.DB.prepare(
-    `SELECT id AS user_id, nickname, avatar_hash, avatar_url, rank, previous_rank, rank_balance
+    `SELECT id AS user_id, nickname, avatar_hash, avatar_url, rank, previous_rank, rank_balance,
+            achievements_diamond, achievements_gold, achievements_silver, achievements_bronze,
+            achievements_raspberry
       FROM users
       WHERE rank IS NOT NULL AND status != 'deleted'
       ORDER BY rank ASC
@@ -39,19 +40,35 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
     rank: number;
     previous_rank: number | null;
     rank_balance: number | null;
+    achievements_diamond: number;
+    achievements_gold: number;
+    achievements_silver: number;
+    achievements_bronze: number;
+    achievements_raspberry: number;
   }>();
-
-  const tallies = await achievementTallies(
-    context.env,
-    leaderboard.results.map((entry) => entry.user_id)
-  );
 
   return json({
     error: null,
     results,
-    leaderboard: leaderboard.results.map((entry) => ({
-      ...entry,
-      achievements: tallies.get(entry.user_id) ?? {}
-    }))
+    leaderboard: leaderboard.results.map(
+      ({
+        achievements_diamond,
+        achievements_gold,
+        achievements_silver,
+        achievements_bronze,
+        achievements_raspberry,
+        ...entry
+      }) => ({
+        ...entry,
+        // Per-tier totals stored on the user, so no extra read here.
+        achievements: {
+          diamond: achievements_diamond,
+          gold: achievements_gold,
+          silver: achievements_silver,
+          bronze: achievements_bronze,
+          raspberry: achievements_raspberry
+        }
+      })
+    )
   });
 }

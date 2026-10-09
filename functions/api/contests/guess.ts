@@ -1,5 +1,5 @@
 import { json } from "../../_lib/auth";
-import { achievementsStart, awardStatement } from "../../_lib/achievements";
+import { awardStatement, recountStatement } from "../../_lib/achievements";
 import { GUESS_COST } from "../../_lib/scoring";
 import { getSessionUser } from "../../_lib/session";
 import type { Env, GuessRequestBody, GuessTargetRecord } from "../../_lib/types";
@@ -103,8 +103,11 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     ).bind(user.id, -GUESS_COST, `Tip: ${movie.round_title} – ${movie.movie_title}`, now)
   ];
   // Not even enough left for the next tip.
-  if (user.imf_coins_balance - GUESS_COST < GUESS_COST && (await achievementsStart(context.env))) {
-    statements.push(awardStatement(context.env, user.id, "broke", "", movie.round_title, now));
+  if (user.imf_coins_balance - GUESS_COST < GUESS_COST) {
+    statements.push(
+      awardStatement(context.env, user.id, "broke", "", movie.round_title, now),
+      recountStatement(context.env, user.id)
+    );
   }
 
   try {

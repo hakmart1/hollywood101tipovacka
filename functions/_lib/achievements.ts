@@ -6,12 +6,12 @@ import type { Env } from "./types";
 // who earned what (user_achievements). Positive achievements are repeatable —
 // one row per event, keyed by `source` — while raspberries (the funny/negative
 // ones) can be earned once. Everything is awarded with INSERT OR IGNORE, so a
-// check can safely run twice.
+// check can safely run twice. Achievements count over the whole history; past
+// rounds were filled in once by scripts/backfill-achievements.ts.
 //
-// Achievements start with the first season after launch (see firstSeason):
-// nothing is awarded before it, and streaks/hattricks only look at rounds
-// evaluated since it started, so older data never mixes in. Streaks
-// then carry on across later seasons.
+// Per-tier totals are also kept on users (achievements_<tier>) so the
+// leaderboard needn't read this table; every award is followed by
+// recountStatement() for that player.
 
 export type AchievementTier = "diamond" | "gold" | "silver" | "bronze" | "raspberry";
 
@@ -53,24 +53,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "optimist", tier: "raspberry", icon: "🌈", name: "Optimista bez hranic", description: "Všechny tipy v tipovačce nad skutečností, průměrně víc než 30 % vedle" },
   { key: "pessimist", tier: "raspberry", icon: "🌧️", name: "Věčný pesimista", description: "Všechny tipy v tipovačce pod skutečností, průměrně víc než 30 % vedle" }
 ];
-
-// Production starts with season 2; the preview (test data) overrides it via the
-// ACHIEVEMENTS_FROM_SEASON var to have achievements over the whole history.
-const DEFAULT_ACHIEVEMENTS_FROM_SEASON = 2;
-
-type AchievementEnv = Pick<Env, "DB" | "ACHIEVEMENTS_FROM_SEASON">;
-
-function firstSeason(env: AchievementEnv): number {
-  const configured = Number.parseInt(env.ACHIEVEMENTS_FROM_SEASON ?? "", 10);
-  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_ACHIEVEMENTS_FROM_SEASON;
-}
-
-// Start of the achievement era, or null while it hasn't begun (no awards).
-export async function achievementsStart(env: AchievementEnv): Promise<string | null> {
-  const season = await env.DB.prepare("SELECT started_date FROM seasons WHERE id = ?1")
-    .bind(firstSeason(env)).first<{ started_date: string }>();
-  return season?.started_date ?? null;
-}
 
 const BY_KEY = new Map(ACHIEVEMENTS.map((def) => [def.key, def]));
 
@@ -118,7 +100,6 @@ export interface RoundAchievementInput {
   payoutByUser: Map<number, number>; // everything paid out for the round
   rankMoves: { userId: number; oldRank: number | null; newRank: number }[];
   activeUserIds: Set<number>; // non-deleted players
-  since: string; // achievementsStart()
   now: string;
 }
 
@@ -130,8 +111,11 @@ export async function roundAchievementStatements(
 ): Promise<D1PreparedStatement[]> {
   const { round, movies, guesses, scoring, payoutByUser, rankMoves, activeUserIds, now } = input;
   const awards: D1PreparedStatement[] = [];
-  const award = (userId: number, key: string, source: string, detail: string | null) =>
+  const awarded = new Set<number>();
+  const award = (userId: number, key: string, source: string, detail: string | null) => {
     awards.push(awardStatement(env, userId, key, source, detail, now));
+    awarded.add(userId);
+  };
 
   const roundSource = `round:${round.id}`;
   const movieById = new Map(movies.map((movie) => [movie.id, movie]));
@@ -258,6 +242,9 @@ export async function roundAchievementStatements(
     await streakAwards(env, input, eligible, winners, award);
   }
 
+  for (const userId of awarded) {
+    awards.push(recountStatement(env, userId));
+  }
   return awards;
 }
 
@@ -268,7 +255,7 @@ async function streakAwards(
   winners: Set<number>,
   award: (userId: number, key: string, source: string, detail: string | null) => void
 ): Promise<void> {
-  const { round, activeUserIds, since } = input;
+  const { round, activeUserIds } = input;
   const roundSource = `round:${round.id}`;
   const longest = Math.max(...STREAKS.map(([length]) => length), FORGETFUL_STREAK);
 
@@ -277,10 +264,10 @@ async function streakAwards(
   const previous = await env.DB.prepare(
     `SELECT r.id, (SELECT COUNT(*) FROM movies m WHERE m.round_id = r.id) AS movie_count
        FROM rounds r
-      WHERE r.type = 'standard' AND r.evaluated_date >= ?3 AND r.id != ?1
+      WHERE r.type = 'standard' AND r.evaluated_date IS NOT NULL AND r.id != ?1
       ORDER BY r.evaluated_date DESC
       LIMIT ?2`
-  ).bind(round.id, longest, since).all<{ id: number; movie_count: number }>();
+  ).bind(round.id, longest).all<{ id: number; movie_count: number }>();
   const previousRounds = previous.results;
 
   if (previousRounds.length > 0) {
@@ -358,43 +345,34 @@ async function roundWinners(env: Pick<Env, "DB">, roundId: number): Promise<Set<
 
 // Final season placings, awarded when the season is closed.
 export async function seasonAchievementStatements(
-  env: AchievementEnv,
+  env: Pick<Env, "DB">,
   season: { id: number; name: string },
   now: string
 ): Promise<D1PreparedStatement[]> {
-  if (season.id < firstSeason(env)) {
-    return [];
-  }
   const podium = await env.DB.prepare(
     "SELECT id, rank FROM users WHERE rank BETWEEN 1 AND 3 AND status != 'deleted'"
   ).all<{ id: number; rank: number }>();
   const keys = ["season_champion", "season_second", "season_third"];
-  return podium.results.map((row) =>
-    awardStatement(env, row.id, keys[row.rank - 1], `season:${season.id}`, season.name, now)
-  );
+  return podium.results.flatMap((row) => [
+    awardStatement(env, row.id, keys[row.rank - 1], `season:${season.id}`, season.name, now),
+    recountStatement(env, row.id)
+  ]);
 }
 
-// Earned achievements per player and tier, for the leaderboard badges.
-export async function achievementTallies(
-  env: Pick<Env, "DB">,
-  userIds: number[]
-): Promise<Map<number, Partial<Record<AchievementTier, number>>>> {
-  const tallies = new Map<number, Partial<Record<AchievementTier, number>>>();
-  if (userIds.length === 0) {
-    return tallies;
-  }
-  const wanted = new Set(userIds);
-  const rows = await env.DB.prepare(
-    "SELECT user_id, achievement_key, COUNT(*) AS n FROM user_achievements GROUP BY user_id, achievement_key"
-  ).all<{ user_id: number; achievement_key: string; n: number }>();
-  for (const row of rows.results) {
-    const def = BY_KEY.get(row.achievement_key);
-    if (!def || !wanted.has(row.user_id)) {
-      continue;
-    }
-    const tally = tallies.get(row.user_id) ?? {};
-    tally[def.tier] = (tally[def.tier] ?? 0) + row.n;
-    tallies.set(row.user_id, tally);
-  }
-  return tallies;
+export const TIERS: AchievementTier[] = ["diamond", "gold", "silver", "bronze", "raspberry"];
+
+// Recomputes a player's per-tier totals (users.achievements_<tier>) from their
+// rows — recounted rather than incremented, because INSERT OR IGNORE may not
+// insert. Without a user id it recounts everyone (after re-tiering in code).
+export function recountStatement(env: Pick<Env, "DB">, userId?: number): D1PreparedStatement {
+  // Keys come from the code registry above, never from user input.
+  const columns = TIERS.map((tier) => {
+    const keys = ACHIEVEMENTS.filter((def) => def.tier === tier).map((def) => `'${def.key}'`).join(", ");
+    return `achievements_${tier} = (SELECT COUNT(*) FROM user_achievements a
+       WHERE a.user_id = users.id AND a.achievement_key IN (${keys}))`;
+  });
+  const sql = `UPDATE users SET ${columns.join(",\n       ")}`;
+  return userId === undefined
+    ? env.DB.prepare(sql)
+    : env.DB.prepare(`${sql} WHERE id = ?1`).bind(userId);
 }

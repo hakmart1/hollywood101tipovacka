@@ -45,7 +45,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
               avatar_url = NULL,
               previous_rank = NULL,
               rank = NULL,
-              rank_balance = NULL
+              rank_balance = NULL,
+              achievements_diamond = 0,
+              achievements_gold = 0,
+              achievements_silver = 0,
+              achievements_bronze = 0,
+              achievements_raspberry = 0
         WHERE id = ?2`
     ).bind(`Smazaný uživatel #${user.id}`, user.id),
     context.env.DB.prepare("DELETE FROM user_achievements WHERE user_id = ?1").bind(user.id),
