@@ -81,54 +81,58 @@ export default function Leaderboard({
   const showAchievements = rows.some((entry) => entry.achievements);
   const columnCount = 2 + (showChange ? 1 : 0) + (showCoins ? 1 : 0) + (showAchievements ? 1 : 0);
   return (
-    <table className="data-table leaderboard-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          {showChange ? (
-            <th>
-              <span className="label-full">Změna</span>
-              <span className="label-short" title="Změna">±</span>
-            </th>
-          ) : null}
-          <th>Hráč</th>
-          {showAchievements ? <th className="col-achievements">Úspěchy</th> : null}
-          {showCoins ? <th>Imfcoiny</th> : null}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.length === 0 ? (
+    // The wrapper is a size container: the layout adapts to the table's own
+    // width (narrow home-page card vs. full leaderboard page), not the screen.
+    <div className="leaderboard-wrap">
+      <table className="data-table leaderboard-table">
+        <thead>
           <tr>
-            <td className="table-empty" colSpan={columnCount}>
-              {emptyText}
-            </td>
-          </tr>
-        ) : null}
-        {rows.map((entry) => (
-          <tr
-            key={entry.nickname}
-            className={entry.nickname === highlightNickname ? "is-me" : undefined}
-          >
-            <td>{entry.rank}</td>
-            {showChange ? <td>{renderChange(entry.previous_rank, entry.rank)}</td> : null}
-            <td>
-              <PlayerCell
-                userId={entry.user_id}
-                nickname={entry.nickname}
-                avatarHash={entry.avatar_hash}
-                avatarUrl={entry.avatar_url}
-                achievements={entry.achievements}
-              />
-            </td>
-            {showAchievements ? (
-              <td className="col-achievements">
-                <AchievementBadges tally={entry.achievements} aligned />
-              </td>
+            <th>#</th>
+            {showChange ? (
+              <th>
+                <span className="label-full">Změna</span>
+                <span className="label-short" title="Změna">±</span>
+              </th>
             ) : null}
-            {showCoins ? <td>{formatCoins(entry.rank_balance ?? 0)}</td> : null}
+            <th>Hráč</th>
+            {showAchievements ? <th className="col-achievements">Úspěchy</th> : null}
+            {showCoins ? <th>Imfcoiny</th> : null}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td className="table-empty" colSpan={columnCount}>
+                {emptyText}
+              </td>
+            </tr>
+          ) : null}
+          {rows.map((entry) => (
+            <tr
+              key={entry.nickname}
+              className={entry.nickname === highlightNickname ? "is-me" : undefined}
+            >
+              <td>{entry.rank}</td>
+              {showChange ? <td>{renderChange(entry.previous_rank, entry.rank)}</td> : null}
+              <td>
+                <PlayerCell
+                  userId={entry.user_id}
+                  nickname={entry.nickname}
+                  avatarHash={entry.avatar_hash}
+                  avatarUrl={entry.avatar_url}
+                  achievements={entry.achievements}
+                />
+              </td>
+              {showAchievements ? (
+                <td className="col-achievements">
+                  <AchievementBadges tally={entry.achievements} aligned />
+                </td>
+              ) : null}
+              {showCoins ? <td>{formatCoins(entry.rank_balance ?? 0)}</td> : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

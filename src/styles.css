@@ -1320,7 +1320,13 @@ a.account-nickname:hover {
   display: none;
 }
 
-@media (max-width: 640px) {
+.leaderboard-wrap {
+  container-type: inline-size;
+}
+
+/* Too narrow for the achievements column (phone, or the half-width card on
+   the home page): badges go under the name instead. */
+@container (max-width: 640px) {
   .col-achievements {
     display: none;
   }
