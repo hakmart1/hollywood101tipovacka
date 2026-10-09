@@ -668,6 +668,11 @@ button.linklike:hover {
   font-size: 1.15rem;
   font-weight: 700;
   color: #17181f;
+  text-decoration: none;
+}
+
+a.account-nickname:hover {
+  text-decoration: underline;
 }
 
 .account-email {
