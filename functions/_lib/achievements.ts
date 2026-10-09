@@ -98,7 +98,8 @@ export interface RoundAchievementInput {
   guesses: ScoringGuess[];
   scoring: RoundScoring;
   payoutByUser: Map<number, number>; // everything paid out for the round
-  rankMoves: { userId: number; oldRank: number | null; newRank: number }[];
+  rankMoves: { userId: number; oldRank: number | null; newRank: number; activatedDate: string | null }[];
+  previousEvaluation: string | null; // evaluated_date of the round before this one
   activeUserIds: Set<number>; // non-deleted players
   now: string;
 }
@@ -109,7 +110,7 @@ export async function roundAchievementStatements(
   env: Pick<Env, "DB">,
   input: RoundAchievementInput
 ): Promise<D1PreparedStatement[]> {
-  const { round, movies, guesses, scoring, payoutByUser, rankMoves, activeUserIds, now } = input;
+  const { round, movies, guesses, scoring, payoutByUser, rankMoves, previousEvaluation, now } = input;
   const awards: D1PreparedStatement[] = [];
   const awarded = new Set<number>();
   const award = (userId: number, key: string, source: string, detail: string | null) => {
@@ -224,15 +225,30 @@ export async function roundAchievementStatements(
   }
 
   // --- Leaderboard movement ---------------------------------------------------
-  for (const move of rankMoves) {
-    if (move.oldRank === null) {
-      continue;
+  // Compared only among players already active at the previous evaluation, so
+  // a newcomer's 0 → 2,000,000 start isn't a ladder, and others being pushed
+  // down by newcomers isn't a snake.
+  const established = rankMoves.filter(
+    (move) =>
+      move.oldRank !== null &&
+      move.activatedDate !== null &&
+      previousEvaluation !== null &&
+      move.activatedDate <= previousEvaluation
+  );
+  const oldPosition = new Map(
+    [...established].sort((a, b) => a.oldRank! - b.oldRank!).map((move, index) => [move.userId, index])
+  );
+  const newPosition = new Map(
+    [...established].sort((a, b) => a.newRank - b.newRank).map((move, index) => [move.userId, index])
+  );
+  for (const move of established) {
+    const gained = oldPosition.get(move.userId)! - newPosition.get(move.userId)!;
+    const detail = `${round.title}: ${move.oldRank}. → ${move.newRank}.`;
+    if (gained > RANK_MOVE) {
+      award(move.userId, "ladder", roundSource, detail);
     }
-    if (move.oldRank - move.newRank > RANK_MOVE) {
-      award(move.userId, "ladder", roundSource, `${round.title}: ${move.oldRank}. → ${move.newRank}.`);
-    }
-    if (move.newRank - move.oldRank > RANK_MOVE) {
-      award(move.userId, "snake", "", `${round.title}: ${move.oldRank}. → ${move.newRank}.`);
+    if (-gained > RANK_MOVE) {
+      award(move.userId, "snake", "", detail);
     }
   }
 

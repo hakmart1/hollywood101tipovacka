@@ -130,7 +130,12 @@ for (const round of rounds) {
   }
   const ranked = active
     .filter((user) => user.activated_date && user.activated_date <= now)
-    .map((user) => ({ id: user.id, nickname: user.nickname, balance: balance.get(user.id) ?? 0 }))
+    .map((user) => ({
+      id: user.id,
+      nickname: user.nickname,
+      activatedDate: user.activated_date,
+      balance: balance.get(user.id) ?? 0
+    }))
     .sort((a, b) => b.balance - a.balance || a.nickname.localeCompare(b.nickname));
   // A season starting in between resets everyone's rank.
   if (seasons.some((season) => season.started_date > previousEvaluation && season.started_date <= now && previousEvaluation)) {
@@ -139,7 +144,8 @@ for (const round of rounds) {
   const rankMoves = ranked.map((player, index) => ({
     userId: player.id,
     oldRank: previousRanks.get(player.id) ?? null,
-    newRank: index + 1
+    newRank: index + 1,
+    activatedDate: player.activatedDate
   }));
 
   await run(
@@ -150,6 +156,7 @@ for (const round of rounds) {
       scoring,
       payoutByUser,
       rankMoves,
+      previousEvaluation: previousEvaluation || null,
       activeUserIds: new Set(active.map((user) => user.id)),
       now
     })
