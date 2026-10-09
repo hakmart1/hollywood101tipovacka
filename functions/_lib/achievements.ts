@@ -8,9 +8,9 @@ import type { Env } from "./types";
 // ones) can be earned once. Everything is awarded with INSERT OR IGNORE, so a
 // check can safely run twice.
 //
-// Achievements start with season ACHIEVEMENTS_FROM_SEASON (the first season
-// after launch): nothing is awarded before it, and streaks/hattricks only look
-// at rounds evaluated since it started, so older data never mixes in. Streaks
+// Achievements start with the first season after launch (see firstSeason):
+// nothing is awarded before it, and streaks/hattricks only look at rounds
+// evaluated since it started, so older data never mixes in. Streaks
 // then carry on across later seasons.
 
 export type AchievementTier = "diamond" | "gold" | "silver" | "bronze" | "raspberry";
@@ -54,12 +54,21 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "pessimist", tier: "raspberry", icon: "🌧️", name: "Věčný pesimista", description: "Všechny tipy v tipovačce pod skutečností, průměrně víc než 30 % vedle" }
 ];
 
-export const ACHIEVEMENTS_FROM_SEASON = 2;
+// Production starts with season 2; the preview (test data) overrides it via the
+// ACHIEVEMENTS_FROM_SEASON var to have achievements over the whole history.
+const DEFAULT_ACHIEVEMENTS_FROM_SEASON = 2;
+
+type AchievementEnv = Pick<Env, "DB" | "ACHIEVEMENTS_FROM_SEASON">;
+
+function firstSeason(env: AchievementEnv): number {
+  const configured = Number.parseInt(env.ACHIEVEMENTS_FROM_SEASON ?? "", 10);
+  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_ACHIEVEMENTS_FROM_SEASON;
+}
 
 // Start of the achievement era, or null while it hasn't begun (no awards).
-export async function achievementsStart(env: Pick<Env, "DB">): Promise<string | null> {
+export async function achievementsStart(env: AchievementEnv): Promise<string | null> {
   const season = await env.DB.prepare("SELECT started_date FROM seasons WHERE id = ?1")
-    .bind(ACHIEVEMENTS_FROM_SEASON).first<{ started_date: string }>();
+    .bind(firstSeason(env)).first<{ started_date: string }>();
   return season?.started_date ?? null;
 }
 
@@ -349,11 +358,11 @@ async function roundWinners(env: Pick<Env, "DB">, roundId: number): Promise<Set<
 
 // Final season placings, awarded when the season is closed.
 export async function seasonAchievementStatements(
-  env: Pick<Env, "DB">,
+  env: AchievementEnv,
   season: { id: number; name: string },
   now: string
 ): Promise<D1PreparedStatement[]> {
-  if (season.id < ACHIEVEMENTS_FROM_SEASON) {
+  if (season.id < firstSeason(env)) {
     return [];
   }
   const podium = await env.DB.prepare(

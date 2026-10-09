@@ -11,6 +11,8 @@ export interface Env {
   EMAIL_FROM?: string;
   // "development" on preview deployments, "local" in wrangler pages dev; unset in production.
   APP_ENV?: string;
+  // First season with achievements (default 2); the preview sets 1.
+  ACHIEVEMENTS_FROM_SEASON?: string;
 }
 
 export interface SessionPayload {

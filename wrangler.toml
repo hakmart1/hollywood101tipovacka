@@ -22,3 +22,5 @@ migrations_dir = "db/migrations"
 # banner never appears there).
 [env.preview.vars]
 APP_ENV = "development"
+# Test data: achievements over the whole history (production starts at season 2).
+ACHIEVEMENTS_FROM_SEASON = "1"
