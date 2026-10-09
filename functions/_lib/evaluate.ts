@@ -1,9 +1,11 @@
+import { achievementsStart, roundAchievementStatements } from "./achievements";
 import { computeRoundScoring } from "./scoring";
 import type { Env } from "./types";
 
 interface EvaluateRoundRecord {
   id: number;
   title: string;
+  type: string;
   date_to: string;
   evaluated_date: string | null;
 }
@@ -69,7 +71,7 @@ export async function evaluateRound(
   }
 
   const round = await env.DB.prepare(
-    "SELECT id, title, date_to, evaluated_date FROM rounds WHERE id = ?1"
+    "SELECT id, title, type, date_to, evaluated_date FROM rounds WHERE id = ?1"
   ).bind(roundId).first<EvaluateRoundRecord>();
   if (!round) {
     return { error: "Tipovačka nebyla nalezena." };
@@ -85,7 +87,8 @@ export async function evaluateRound(
     "SELECT id, user_id, movie_id, guessed_revenue FROM guesses WHERE round_id = ?1"
   ).bind(roundId).all<EvalGuessRecord>();
 
-  const { guessPayout, contestBonusByUser } = computeRoundScoring(movies.results, guesses.results);
+  const scoring = computeRoundScoring(movies.results, guesses.results);
+  const { guessPayout, contestBonusByUser } = scoring;
 
   const movieTitleById = new Map(movies.results.map((movie) => [movie.id, movie.movie_title]));
   const userTotals = new Map<number, number>();
@@ -145,6 +148,29 @@ export async function evaluateRound(
       ).bind(player.oldRank, index + 1, player.newBalance, player.id)
     );
   });
+
+  // Achievements go into the same batch, so they land atomically with the
+  // payouts. Not awarded before the achievement era starts.
+  const since = await achievementsStart(env);
+  if (since) {
+    statements.push(
+      ...(await roundAchievementStatements(env, {
+        round: { id: round.id, title: round.title, type: round.type },
+        movies: movies.results,
+        guesses: guesses.results,
+        scoring,
+        payoutByUser: userTotals,
+        rankMoves: ranked.map((player, index) => ({
+          userId: player.id,
+          oldRank: player.oldRank,
+          newRank: index + 1
+        })),
+        activeUserIds: new Set(playerRows.results.map((player) => player.id)),
+        since,
+        now
+      }))
+    );
+  }
 
   statements.push(
     env.DB.prepare(

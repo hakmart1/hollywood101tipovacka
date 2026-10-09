@@ -48,6 +48,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
               rank_balance = NULL
         WHERE id = ?2`
     ).bind(`Smazaný uživatel #${user.id}`, user.id),
+    context.env.DB.prepare("DELETE FROM user_achievements WHERE user_id = ?1").bind(user.id),
     // Past seasons keep the placing, but no longer under the player's name.
     context.env.DB.prepare(
       "UPDATE season_standings SET nickname = ?1 WHERE user_id = ?2"

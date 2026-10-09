@@ -1,4 +1,5 @@
 import { json } from "../../_lib/auth";
+import { achievementsStart, awardStatement } from "../../_lib/achievements";
 import { getSessionUser } from "../../_lib/session";
 import type { Env } from "../../_lib/types";
 
@@ -38,7 +39,12 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
 
   const now = new Date().toISOString();
 
+  const awards = (await achievementsStart(context.env))
+    ? [awardStatement(context.env, user.id, "bailout", "", null, now)]
+    : [];
+
   await context.env.DB.batch([
+    ...awards,
     context.env.DB.prepare(
       "UPDATE users SET imf_coins_balance = imf_coins_balance + ?1, last_coins_request_date = ?2 WHERE id = ?3"
     ).bind(GRANT_AMOUNT, now, user.id),

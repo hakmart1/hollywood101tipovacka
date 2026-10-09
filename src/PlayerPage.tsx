@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import Achievements from "./Achievements";
+import type { Achievement } from "./Achievements";
 import BalanceCard from "./BalanceCard";
 import Loader from "./Loader";
 import { RankAside, TipStatChips } from "./ProfileStats";
@@ -21,12 +23,14 @@ interface PlayerResponse {
   player?: Player;
   ranked_players?: number;
   stats?: TipStats;
+  achievements?: Achievement[];
 }
 
 interface ProfileData {
   player: Player;
   rankedPlayers: number;
   stats: TipStats | null;
+  achievements: Achievement[];
 }
 
 interface PlayerPageProps {
@@ -64,7 +68,8 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
       setData({
         player: payload.player,
         rankedPlayers: payload.ranked_players ?? 0,
-        stats: payload.stats ?? null
+        stats: payload.stats ?? null,
+        achievements: payload.achievements ?? []
       });
     } catch {
       onMessage("Profil hráče se nepodařilo načíst.");
@@ -85,7 +90,7 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
     );
   }
 
-  const { player, rankedPlayers, stats } = data;
+  const { player, rankedPlayers, stats, achievements } = data;
   const avatar =
     player.avatar_url?.trim() ||
     (player.avatar_hash ? `https://www.gravatar.com/avatar/${player.avatar_hash}?s=192&d=404` : null);
@@ -116,6 +121,7 @@ export default function PlayerPage({ playerId, onMessage }: PlayerPageProps) {
           }
         />
       </div>
+      {achievements.length > 0 ? <Achievements achievements={achievements} /> : null}
     </section>
   );
 }

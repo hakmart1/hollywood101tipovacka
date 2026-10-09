@@ -1,4 +1,6 @@
 import { json } from "../../_lib/auth";
+import { achievementsStart, awardStatement } from "../../_lib/achievements";
+import { GUESS_COST } from "../../_lib/scoring";
 import { getSessionUser } from "../../_lib/session";
 import type { Env, GuessRequestBody, GuessTargetRecord } from "../../_lib/types";
 
@@ -7,7 +9,6 @@ interface PagesContext {
   request: Request;
 }
 
-const GUESS_COST = 100_000;
 
 export async function onRequestPost(context: PagesContext): Promise<Response> {
   const user = await getSessionUser(context.request, context.env);
@@ -90,18 +91,24 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     });
   }
 
+  const statements = [
+    context.env.DB.prepare(
+      "INSERT INTO guesses (round_id, user_id, movie_id, guessed_revenue) VALUES (?1, ?2, ?3, ?4)"
+    ).bind(movie.round_id, user.id, movieId, guessedRevenue),
+    context.env.DB.prepare(
+      "UPDATE users SET imf_coins_balance = imf_coins_balance - ?1 WHERE id = ?2"
+    ).bind(GUESS_COST, user.id),
+    context.env.DB.prepare(
+      "INSERT INTO imf_coin_history (user_id, amount, reason, created_date) VALUES (?1, ?2, ?3, ?4)"
+    ).bind(user.id, -GUESS_COST, `Tip: ${movie.round_title} – ${movie.movie_title}`, now)
+  ];
+  // Not even enough left for the next tip.
+  if (user.imf_coins_balance - GUESS_COST < GUESS_COST && (await achievementsStart(context.env))) {
+    statements.push(awardStatement(context.env, user.id, "broke", "", movie.round_title, now));
+  }
+
   try {
-    await context.env.DB.batch([
-      context.env.DB.prepare(
-        "INSERT INTO guesses (round_id, user_id, movie_id, guessed_revenue) VALUES (?1, ?2, ?3, ?4)"
-      ).bind(movie.round_id, user.id, movieId, guessedRevenue),
-      context.env.DB.prepare(
-        "UPDATE users SET imf_coins_balance = imf_coins_balance - ?1 WHERE id = ?2"
-      ).bind(GUESS_COST, user.id),
-      context.env.DB.prepare(
-        "INSERT INTO imf_coin_history (user_id, amount, reason, created_date) VALUES (?1, ?2, ?3, ?4)"
-      ).bind(user.id, -GUESS_COST, `Tip: ${movie.round_title} – ${movie.movie_title}`, now)
-    ]);
+    await context.env.DB.batch(statements);
   } catch (error) {
     console.error("Guess insert failed", error);
     return json({ error: "Tip se teď nepodařilo uložit." });
