@@ -1316,13 +1316,36 @@ a.account-nickname:hover {
   display: none;
 }
 
+.leaderboard-table .label-short {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .col-achievements {
     display: none;
   }
 
+  /* Badges wrap so the name column can shrink and the coins stay visible. */
   .achievement-badges.mobile-only {
     display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0 0.4rem;
+    font-size: 0.72rem;
+    white-space: normal;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .leaderboard-table .label-full {
+    display: none;
+  }
+
+  .leaderboard-table .label-short {
+    display: inline;
   }
 }
 

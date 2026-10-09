@@ -81,11 +81,16 @@ export default function Leaderboard({
   const showAchievements = rows.some((entry) => entry.achievements);
   const columnCount = 2 + (showChange ? 1 : 0) + (showCoins ? 1 : 0) + (showAchievements ? 1 : 0);
   return (
-    <table className="data-table">
+    <table className="data-table leaderboard-table">
       <thead>
         <tr>
           <th>#</th>
-          {showChange ? <th>Změna</th> : null}
+          {showChange ? (
+            <th>
+              <span className="label-full">Změna</span>
+              <span className="label-short" title="Změna">±</span>
+            </th>
+          ) : null}
           <th>Hráč</th>
           {showAchievements ? <th className="col-achievements">Úspěchy</th> : null}
           {showCoins ? <th>Imfcoiny</th> : null}
