@@ -1,4 +1,6 @@
+import PlayerLink from "./PlayerLink";
 export interface MovieStanding {
+  user_id: number | null;
   rank: number;
   nickname: string;
   guess: number;
@@ -33,6 +35,7 @@ export function MovieNameCell({ posterUrl, title }: { posterUrl: string | null; 
 }
 
 export interface Standing {
+  user_id: number | null;
   rank: number;
   nickname: string;
   total_error: number;
@@ -124,7 +127,9 @@ export default function RoundResultView({
                 className={standing.nickname === highlightNickname ? "is-me" : undefined}
               >
                 <td>{standing.rank}</td>
-                <td>{standing.nickname}</td>
+                <td>
+                  <PlayerLink userId={standing.user_id} nickname={standing.nickname} />
+                </td>
                 <td>{formatMillions(standing.total_error)}</td>
                 <td className={standing.contest_bonus > 0 ? "amount-plus" : undefined}>
                   {standing.contest_bonus > 0 ? "+" : ""}
@@ -166,7 +171,9 @@ export default function RoundResultView({
                     className={standing.nickname === highlightNickname ? "is-me" : undefined}
                   >
                     <td>{standing.rank}</td>
-                    <td>{standing.nickname}</td>
+                    <td>
+                  <PlayerLink userId={standing.user_id} nickname={standing.nickname} />
+                </td>
                     <td>{formatMillions(standing.guess)}</td>
                     <td>{formatMillions(Math.abs(standing.guess - movie.actual_revenue))}</td>
                     <td className={standing.coins_won > 0 ? "amount-plus" : undefined}>

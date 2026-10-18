@@ -1,9 +1,11 @@
+import { roundAchievementStatements } from "./achievements";
 import { computeRoundScoring } from "./scoring";
 import type { Env } from "./types";
 
 interface EvaluateRoundRecord {
   id: number;
   title: string;
+  type: string;
   date_to: string;
   evaluated_date: string | null;
 }
@@ -69,7 +71,7 @@ export async function evaluateRound(
   }
 
   const round = await env.DB.prepare(
-    "SELECT id, title, date_to, evaluated_date FROM rounds WHERE id = ?1"
+    "SELECT id, title, type, date_to, evaluated_date FROM rounds WHERE id = ?1"
   ).bind(roundId).first<EvaluateRoundRecord>();
   if (!round) {
     return { error: "Tipovačka nebyla nalezena." };
@@ -85,7 +87,8 @@ export async function evaluateRound(
     "SELECT id, user_id, movie_id, guessed_revenue FROM guesses WHERE round_id = ?1"
   ).bind(roundId).all<EvalGuessRecord>();
 
-  const { guessPayout, contestBonusByUser } = computeRoundScoring(movies.results, guesses.results);
+  const scoring = computeRoundScoring(movies.results, guesses.results);
+  const { guessPayout, contestBonusByUser } = scoring;
 
   const movieTitleById = new Map(movies.results.map((movie) => [movie.id, movie.movie_title]));
   const userTotals = new Map<number, number>();
@@ -126,14 +129,21 @@ export async function evaluateRound(
   // the movement indicator. Everyone is ranked (including the admin); deleted
   // accounts are excluded.
   const playerRows = await env.DB.prepare(
-    "SELECT id, nickname, imf_coins_balance, rank FROM users WHERE status != 'deleted'"
-  ).all<{ id: number; nickname: string; imf_coins_balance: number; rank: number | null }>();
+    "SELECT id, nickname, imf_coins_balance, rank, activated_date FROM users WHERE status != 'deleted'"
+  ).all<{
+    id: number;
+    nickname: string;
+    imf_coins_balance: number;
+    rank: number | null;
+    activated_date: string | null;
+  }>();
 
   const ranked = playerRows.results
     .map((player) => ({
       id: player.id,
       nickname: player.nickname,
       oldRank: player.rank,
+      activatedDate: player.activated_date,
       newBalance: player.imf_coins_balance + (userTotals.get(player.id) || 0)
     }))
     .sort((a, b) => b.newBalance - a.newBalance || a.nickname.localeCompare(b.nickname));
@@ -145,6 +155,30 @@ export async function evaluateRound(
       ).bind(player.oldRank, index + 1, player.newBalance, player.id)
     );
   });
+
+  // Achievements go into the same batch, so they land atomically with the
+  // payouts.
+  const previous = await env.DB.prepare(
+    "SELECT MAX(evaluated_date) AS at FROM rounds WHERE evaluated_date IS NOT NULL"
+  ).first<{ at: string | null }>();
+  statements.push(
+    ...(await roundAchievementStatements(env, {
+      round: { id: round.id, title: round.title, type: round.type },
+      movies: movies.results,
+      guesses: guesses.results,
+      scoring,
+      payoutByUser: userTotals,
+      rankMoves: ranked.map((player, index) => ({
+        userId: player.id,
+        oldRank: player.oldRank,
+        newRank: index + 1,
+        activatedDate: player.activatedDate
+      })),
+      previousEvaluation: previous?.at ?? null,
+      activeUserIds: new Set(playerRows.results.map((player) => player.id)),
+      now
+    }))
+  );
 
   statements.push(
     env.DB.prepare(

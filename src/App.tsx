@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import AdminCodesPage from "./AdminCodesPage";
 import AdminContestsPage from "./AdminContestsPage";
+import AdminSeasonsPage from "./AdminSeasonsPage";
 import HomeContests from "./HomeContests";
 import HomeResults from "./HomeResults";
 import LeaderboardPage from "./LeaderboardPage";
+import PlayerPage from "./PlayerPage";
 import Modal from "./Modal";
 import ResultsArchivePage from "./ResultsArchivePage";
 import ResetPasswordPage from "./ResetPasswordPage";
@@ -52,10 +54,12 @@ type Route =
   | "reset"
   | "history"
   | "leaderboard"
+  | "player"
   | "admin-codes"
-  | "admin-contests";
+  | "admin-contests"
+  | "admin-seasons";
 
-const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests"];
+const ADMIN_ROUTES: Route[] = ["admin-codes", "admin-contests", "admin-seasons"];
 
 const defaultSignupForm = {
   email: "",
@@ -80,6 +84,9 @@ function readRoute(): Route {
   if (hash === "#/admin/contests") {
     return "admin-contests";
   }
+  if (hash === "#/admin/seasons") {
+    return "admin-seasons";
+  }
   if (hash === "#/rules") {
     return "rules";
   }
@@ -91,6 +98,9 @@ function readRoute(): Route {
   }
   if (hash === "#/results") {
     return "history";
+  }
+  if (hash.startsWith("#/hrac/")) {
+    return "player";
   }
   if (hash === "#/poradi") {
     return "leaderboard";
@@ -153,8 +163,12 @@ function NavAvatar({ user }: { user: User }) {
 
 export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
+  // The raw hash too: moving between two profiles keeps route === "player".
+  const [hash, setHash] = useState(() => window.location.hash);
   const [loginState, setLoginState] = useState<LoginState>("loading");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Deployment environment reported by /api/me ("production" when unset).
+  const [environment, setEnvironment] = useState("production");
   const [output, setOutput] = useState("");
   const [signupOpen, setSignupOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -204,7 +218,10 @@ export default function App() {
   }, [currentUser?.id, currentUser?.role, route]);
 
   useEffect(() => {
-    const onHashChange = () => setRoute(readRoute());
+    const onHashChange = () => {
+      setRoute(readRoute());
+      setHash(window.location.hash);
+    };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -229,7 +246,12 @@ export default function App() {
         }
       });
 
-      const payload = (await response.json()) as { user?: User | null; error: string | null };
+      const payload = (await response.json()) as {
+        user?: User | null;
+        error: string | null;
+        environment?: string;
+      };
+      setEnvironment(payload.environment || "production");
 
       if (!response.ok) {
         setOutput(payload.error || "Nepodařilo se načíst přihlášení.");
@@ -407,6 +429,12 @@ export default function App() {
 
   return (
     <>
+      {environment !== "production" ? (
+        <div className="env-banner" role="note">
+          {environment === "local" ? "LOKÁLNÍ prostředí" : "DEV prostředí"} · testovací data, nejde o
+          produkci
+        </div>
+      ) : null}
       <header className="app-header">
         <a className="brand" href="#/">
           <BrandLogo className="brand-logo" />
@@ -496,6 +524,9 @@ export default function App() {
               <a href="#/admin/codes" className={route === "admin-codes" ? "active" : ""}>
                 Aktivační kódy
               </a>
+              <a href="#/admin/seasons" className={route === "admin-seasons" ? "active" : ""}>
+                Sezóny
+              </a>
             </nav>
             {route === "admin-codes" ? (
               <AdminCodesPage
@@ -506,6 +537,9 @@ export default function App() {
             ) : null}
             {route === "admin-contests" ? (
               <AdminContestsPage onMessage={setOutput} timezone={currentUser.timezone} />
+            ) : null}
+            {route === "admin-seasons" ? (
+              <AdminSeasonsPage onMessage={setOutput} timezone={currentUser.timezone} />
             ) : null}
           </section>
         ) : null}
@@ -546,6 +580,13 @@ export default function App() {
 
         {route === "leaderboard" ? (
           <LeaderboardPage onMessage={setOutput} highlightNickname={currentUser?.nickname ?? null} />
+        ) : null}
+        {route === "player" ? (
+          <PlayerPage
+            key={hash}
+            playerId={Number.parseInt(hash.slice("#/hrac/".length), 10)}
+            onMessage={setOutput}
+          />
         ) : null}
       </main>
 

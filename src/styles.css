@@ -668,11 +668,20 @@ button.linklike:hover {
   font-size: 1.15rem;
   font-weight: 700;
   color: #17181f;
+  text-decoration: none;
+}
+
+a.account-nickname:hover {
+  text-decoration: underline;
 }
 
 .account-email {
   font-size: 0.85rem;
   color: #6b7280;
+}
+
+.account-identity .profile-chips {
+  margin: 0.4rem 0 0.2rem;
 }
 
 .balance-card {
@@ -1262,6 +1271,90 @@ button.linklike:hover {
   gap: 0.5rem;
 }
 
+.player-cell-main {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+}
+
+.achievement-badges {
+  display: inline-flex;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.achievement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+/* Desktop column: a fixed slot per tier so rows line up. */
+.achievement-badges.is-aligned {
+  gap: 0.25rem;
+}
+
+.achievement-badges.is-aligned .achievement-badge {
+  min-width: 2.6em;
+}
+
+.achievement-badge.is-zero {
+  justify-content: center;
+  opacity: 0.35;
+}
+
+.col-achievements {
+  white-space: nowrap;
+}
+
+/* Under the name only on mobile, where the column is hidden. */
+.achievement-badges.mobile-only {
+  display: none;
+}
+
+.leaderboard-table .label-short {
+  display: none;
+}
+
+.leaderboard-wrap {
+  container-type: inline-size;
+}
+
+/* Too narrow for the achievements column (phone, or the half-width card on
+   the home page): badges go under the name instead. */
+@container (max-width: 640px) {
+  .col-achievements {
+    display: none;
+  }
+
+  /* Badges wrap so the name column can shrink and the coins stay visible. */
+  .achievement-badges.mobile-only {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0 0.4rem;
+    font-size: 0.72rem;
+    white-space: normal;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .leaderboard-table .label-full {
+    display: none;
+  }
+
+  .leaderboard-table .label-short {
+    display: inline;
+  }
+}
+
 .player-avatar {
   position: relative;
   flex: none;
@@ -1311,6 +1404,7 @@ button.linklike:hover {
 
 /* Mobile: tighten cards and tables so more fits before scrolling kicks in. */
 @media (max-width: 640px) {
+
   .card,
   .user-card,
   .round-card,
@@ -1413,5 +1507,287 @@ button.linklike:hover {
 
 .loader-label {
   font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Non-production environment banner (driven by APP_ENV via /api/me). */
+.env-banner {
+  background: repeating-linear-gradient(-45deg, #c0392b, #c0392b 12px, #a93226 12px, #a93226 24px);
+  color: #fff;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 1rem;
+}
+
+/* Seasons: leaderboard picker and admin page. */
+.season-caption {
+  margin: 0 0 0.75rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.season-admin-card h3 {
+  margin-top: 0;
+}
+
+.season-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.season-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.season-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+/* Empty-state row inside a header-only table. */
+.data-table td.table-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 1.25rem 0.7rem;
+}
+
+.data-table tbody tr:has(> td.table-empty):hover {
+  background: transparent;
+}
+
+/* Player names linking to public profiles. */
+.player-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.player-link:hover {
+  text-decoration: underline;
+  color: #b8860b;
+}
+
+/* Public player profile. */
+.player-page {
+  max-width: 42rem;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-avatar {
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: #17181f;
+  color: #f6c945;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-card h2.profile-name {
+  margin: 0;
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-meta {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+
+
+
+
+
+.profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.profile-chip {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 0.8rem;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.balance-aside {
+  margin-left: auto;
+  padding-left: 1.25rem;
+  border-left: 1px solid #f0d488;
+}
+
+.profile-rank {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-rank-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #17181f;
+  white-space: nowrap;
+}
+
+.profile-rank-of {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.profile-rank-change {
+  margin-left: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  /* Rank drops under the balance on narrow screens. */
+  .balance-card:has(.balance-aside) {
+    flex-wrap: wrap;
+  }
+
+  .balance-aside {
+    flex-basis: 100%;
+    margin-left: 0;
+    padding: 0.75rem 0 0;
+    border-left: none;
+    border-top: 1px solid #f0d488;
+  }
+}
+
+
+
+
+/* Achievements */
+.achievements-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.user-card h3.achievements-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.achievement-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+
+.tally-item.is-zero {
+  opacity: 0.4;
+}
+
+.achievement-group {
+  margin-top: 1rem;
+}
+
+.achievement-group-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.achievement-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid var(--tier-color);
+  background: var(--tier-bg);
+}
+
+.achievement-tile.tier-diamond { --tier-color: #38bdf8; --tier-bg: #f0f9ff; }
+.achievement-tile.tier-gold { --tier-color: #d4a017; --tier-bg: #fffbeb; }
+.achievement-tile.tier-silver { --tier-color: #9ca3af; --tier-bg: #f9fafb; }
+.achievement-tile.tier-bronze { --tier-color: #cd7f32; --tier-bg: #fdf6ee; }
+.achievement-tile.tier-raspberry { --tier-color: #c2185b; --tier-bg: #fdf2f6; }
+
+.achievement-tile.is-locked {
+  --tier-color: #e5e7eb;
+  --tier-bg: #fafafa;
+  opacity: 0.55;
+}
+
+.achievement-tile.is-locked .achievement-icon {
+  filter: grayscale(1);
+}
+
+.achievement-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.achievement-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.achievement-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.achievement-count {
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--tier-color);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.achievement-desc {
+  font-size: 0.78rem;
   color: #6b7280;
 }

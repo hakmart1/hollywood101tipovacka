@@ -90,23 +90,18 @@ export default function HomeResults({ onMessage, highlightNickname }: HomeResult
 
       <div className="home-table-col">
         <h2>Žebříček hráčů</h2>
-        {leaderboard.length === 0 ? (
-          <p className="guess-hint">Zatím žádní hráči.</p>
-        ) : (
-          <>
-            <div className="card">
-              <Leaderboard
-                entries={leaderboard}
-                highlightNickname={highlightNickname}
-                limit={10}
-                showCoins={false}
-              />
-            </div>
-            <p className="more-link">
-              <a href="#/poradi">Celý žebříček →</a>
-            </p>
-          </>
-        )}
+        <div className="card">
+          <Leaderboard
+            entries={leaderboard}
+            highlightNickname={highlightNickname}
+            limit={10}
+            showCoins={false}
+            emptyText="Pořadí bude k dispozici po prvním vyhodnocení."
+          />
+        </div>
+        <p className="more-link">
+          <a href="#/poradi">Celý žebříček →</a>
+        </p>
       </div>
     </div>
   );

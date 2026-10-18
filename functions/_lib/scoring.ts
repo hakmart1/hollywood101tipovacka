@@ -1,3 +1,6 @@
+// Stake paid when a tip is placed (never refunded; editing a tip is free).
+export const GUESS_COST = 100_000;
+
 // Reward rules for evaluating a round (mirrored on the user-facing rules page).
 // Used by both the admin evaluate endpoint and the public results endpoint so
 // displayed standings always match the coins actually paid out.
