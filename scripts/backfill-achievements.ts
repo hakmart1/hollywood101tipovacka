@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import {
   awardStatement,
   recountStatement,
+  SEASON_PLACE_KEYS,
   roundAchievementStatements
 } from "../functions/_lib/achievements";
 import { computeRoundScoring, GUESS_COST } from "../functions/_lib/scoring";
@@ -182,11 +183,11 @@ for (const entry of ledger) {
   }
 }
 
-// Podium of every ended season.
-const podiumKeys = ["season_champion", "season_second", "season_third"];
+// Final placings (1st–4th) of every ended season.
+const podiumKeys = SEASON_PLACE_KEYS;
 for (const season of seasons.filter((s) => s.ended_date)) {
   const podium = db.prepare(
-    "SELECT user_id, rank FROM season_standings WHERE season_id = ?1 AND rank BETWEEN 1 AND 3"
+    `SELECT user_id, rank FROM season_standings WHERE season_id = ?1 AND rank BETWEEN 1 AND ${podiumKeys.length}`
   ).all(season.id) as { user_id: number; rank: number }[];
   for (const row of podium) {
     await run([

@@ -25,6 +25,8 @@ export interface AchievementDef {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "season_champion", tier: "diamond", icon: "⭐", name: "Hvězda na chodníku slávy", description: "1. místo v sezóně" },
+  { key: "season_second", tier: "diamond", icon: "🎞️", name: "Druhý v titulcích", description: "2. místo v sezóně" },
+  { key: "season_third", tier: "diamond", icon: "📸", name: "Na červeném koberci", description: "3. místo v sezóně" },
   { key: "crystal_ball", tier: "diamond", icon: "🔮", name: "Křišťálová koule", description: "Celková odchylka v tipovačce pod 5 %" },
   { key: "clean_sweep", tier: "diamond", icon: "🧹", name: "Čistý stůl", description: "1. místo u všech filmů jedné tipovačky" },
   { key: "hattrick", tier: "diamond", icon: "🎩", name: "Hattrick", description: "Vyhrát 3 tipovačky v řadě" },
@@ -32,8 +34,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "season_pass", tier: "diamond", icon: "🎟️", name: "Permanentka", description: "50 tipovaček v řadě" },
   { key: "bonus_hunter", tier: "diamond", icon: "🏹", name: "Lovec bonusů", description: "Vyhrát bonusovou tipovačku" },
   { key: "superstar", tier: "gold", icon: "🌟", name: "Superstar", description: "1. místo v tipovačce" },
-  { key: "season_second", tier: "gold", icon: "🎞️", name: "Druhý v titulcích", description: "2. místo v sezóně" },
-  { key: "season_third", tier: "gold", icon: "📸", name: "Na červeném koberci", description: "3. místo v sezóně" },
+  { key: "season_fourth", tier: "gold", icon: "🥔", name: "Bramborová medaile", description: "4. místo v sezóně" },
   { key: "nostradamus", tier: "gold", icon: "🎯", name: "Nostradamus", description: "Tip přesně na skutečné tržby" },
   { key: "silver_screen", tier: "silver", icon: "🎬", name: "Stříbrné plátno", description: "2. místo v tipovačce" },
   { key: "lead_role", tier: "silver", icon: "🎭", name: "Hlavní role", description: "1. místo u filmu" },
@@ -349,16 +350,20 @@ async function roundWinners(env: Pick<Env, "DB">, roundId: number): Promise<Set<
   return new Set(standings.filter((standing) => standing.rank === 1).map((standing) => standing.userId));
 }
 
-// Final season placings, awarded when the season is closed.
+// Achievement per final season rank (index 0 = 1st place).
+export const SEASON_PLACE_KEYS = ["season_champion", "season_second", "season_third", "season_fourth"];
+
+// Final season placings (podium + the potato medal), awarded when the season
+// is closed.
 export async function seasonAchievementStatements(
   env: Pick<Env, "DB">,
   season: { id: number; name: string },
   now: string
 ): Promise<D1PreparedStatement[]> {
   const podium = await env.DB.prepare(
-    "SELECT id, rank FROM users WHERE rank BETWEEN 1 AND 3 AND status != 'deleted'"
-  ).all<{ id: number; rank: number }>();
-  const keys = ["season_champion", "season_second", "season_third"];
+    "SELECT id, rank FROM users WHERE rank BETWEEN 1 AND ?1 AND status != 'deleted'"
+  ).bind(SEASON_PLACE_KEYS.length).all<{ id: number; rank: number }>();
+  const keys = SEASON_PLACE_KEYS;
   return podium.results.flatMap((row) => [
     awardStatement(env, row.id, keys[row.rank - 1], `season:${season.id}`, season.name, now),
     recountStatement(env, row.id)
