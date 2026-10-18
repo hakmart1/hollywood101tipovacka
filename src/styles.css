@@ -1184,7 +1184,6 @@ a.account-nickname:hover {
 }
 
 .rules-page {
-  max-width: 42rem;
   line-height: 1.5;
 }
 
@@ -1571,10 +1570,6 @@ a.account-nickname:hover {
 }
 
 /* Public player profile. */
-.player-page {
-  max-width: 42rem;
-}
-
 .profile-header {
   display: flex;
   align-items: center;
