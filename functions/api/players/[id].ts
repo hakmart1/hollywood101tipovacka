@@ -1,3 +1,4 @@
+import { ACHIEVEMENTS, isRepeatable } from "../../_lib/achievements";
 import { json } from "../../_lib/auth";
 import type { Env } from "../../_lib/types";
 
@@ -53,9 +54,32 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
         AND m.actual_revenue > 0`
   ).bind(playerId).all<{ guess: number; actual: number }>();
 
+  // Earned achievements per key; SQLite returns `detail` from the row holding
+  // MAX(earned_date), i.e. the latest one.
+  const earned = await context.env.DB.prepare(
+    `SELECT achievement_key, COUNT(*) AS count, MAX(earned_date) AS last_earned, detail AS last_detail
+       FROM user_achievements
+      WHERE user_id = ?1
+      GROUP BY achievement_key`
+  ).bind(playerId).all<{ achievement_key: string; count: number; last_earned: string; last_detail: string | null }>();
+  const earnedByKey = new Map(earned.results.map((row) => [row.achievement_key, row]));
+
+  // The whole catalog, so the page can show what's still locked too.
+  const achievements = ACHIEVEMENTS.map((def) => {
+    const row = earnedByKey.get(def.key);
+    return {
+      ...def,
+      repeatable: isRepeatable(def),
+      count: row?.count ?? 0,
+      last_earned: row?.last_earned ?? null,
+      last_detail: row?.last_detail ?? null
+    };
+  });
+
   return json({
     error: null,
     player,
+    achievements,
     ranked_players: ranked?.n ?? 0,
     stats: tipStats(tips.results)
   });

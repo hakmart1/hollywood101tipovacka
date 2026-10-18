@@ -3,6 +3,8 @@ import Loader from "./Loader";
 import type { FormEvent } from "react";
 import type { User } from "./App";
 import Modal from "./Modal";
+import Achievements from "./Achievements";
+import type { Achievement } from "./Achievements";
 import BalanceCard from "./BalanceCard";
 import { RankAside, TipStatChips } from "./ProfileStats";
 import type { TipStats } from "./ProfileStats";
@@ -35,12 +37,14 @@ interface UserPageProps {
 
 const LOW_BALANCE_THRESHOLD = 200_000;
 
-// Rank + tip stats come from the public profile endpoint, same as others see.
+// Rank, tip stats and achievements come from the public profile endpoint, same
+// as others see.
 interface ProfileSummary {
   rank: number | null;
   previousRank: number | null;
   rankedPlayers: number;
   stats: TipStats | null;
+  achievements: Achievement[];
 }
 
 
@@ -94,7 +98,8 @@ export default function UserPage({
             rank: payload.player.rank,
             previousRank: payload.player.previous_rank,
             rankedPlayers: payload.ranked_players ?? 0,
-            stats: payload.stats ?? null
+            stats: payload.stats ?? null,
+            achievements: payload.achievements ?? []
           });
         }
       })
@@ -246,7 +251,9 @@ export default function UserPage({
             )}
           </div>
           <div className="account-identity">
-            <span className="account-nickname">{user.nickname}</span>
+            <a className="account-nickname" href={`#/hrac/${user.id}`} title="Zobrazit veřejný profil">
+              {user.nickname}
+            </a>
             <span className="account-email">{user.email}</span>
             <TipStatChips stats={profile?.stats ?? null} />
           </div>
@@ -354,6 +361,8 @@ export default function UserPage({
           </form>
         </Modal>
       ) : null}
+
+      {profile && profile.achievements.length > 0 ? <Achievements achievements={profile.achievements} /> : null}
 
       {user.status === "active" ? (
       <section className="coin-history">

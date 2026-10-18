@@ -1,0 +1,124 @@
+export type AchievementTier = "diamond" | "gold" | "silver" | "bronze" | "raspberry";
+
+export interface Achievement {
+  key: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: AchievementTier;
+  repeatable: boolean;
+  count: number;
+  last_earned: string | null;
+  last_detail: string | null;
+}
+
+export const TIERS: { tier: AchievementTier; medal: string; label: string }[] = [
+  { tier: "diamond", medal: "💎", label: "Diamantové" },
+  { tier: "gold", medal: "🏆", label: "Zlaté" },
+  { tier: "silver", medal: "🥈", label: "Stříbrné" },
+  { tier: "bronze", medal: "🥉", label: "Bronzové" },
+  { tier: "raspberry", medal: "🍓", label: "Zlaté maliny" }
+];
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+}
+
+// Achievement overview: a per-tier tally, then every achievement as a tile —
+// earned ones in colour with a count, the rest greyed out.
+export default function Achievements({ achievements }: { achievements: Achievement[] }) {
+  const total = achievements.reduce((sum, item) => sum + item.count, 0);
+
+  return (
+    <div className="user-card achievements-card">
+      <div className="achievements-head">
+        <h3 className="achievements-title">Úspěchy</h3>
+        <div className="achievement-tally">
+          {TIERS.map(({ tier, medal, label }) => {
+            const count = achievements
+              .filter((item) => item.tier === tier)
+              .reduce((sum, item) => sum + item.count, 0);
+            return (
+              <span key={tier} className={`tally-item${count === 0 ? " is-zero" : ""}`} title={label}>
+                {medal} {count}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+      {total === 0 ? <p className="guess-hint">Zatím žádné úspěchy.</p> : null}
+
+      {TIERS.map(({ tier, medal, label }) => (
+        <section key={tier} className="achievement-group">
+          <h4 className="achievement-group-title">
+            {medal} {label}
+          </h4>
+          <div className="achievement-grid">
+            {achievements
+              .filter((item) => item.tier === tier)
+              .map((item) => (
+                <div
+                  key={item.key}
+                  className={`achievement-tile tier-${tier}${item.count > 0 ? "" : " is-locked"}`}
+                  title={
+                    item.count > 0 && item.last_earned
+                      ? `Naposledy ${formatDate(item.last_earned)}${item.last_detail ? ` · ${item.last_detail}` : ""}`
+                      : "Zatím nezískáno"
+                  }
+                >
+                  <span className="achievement-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="achievement-text">
+                    <span className="achievement-name">
+                      {item.name}
+                      {item.repeatable && item.count > 1 ? (
+                        <span className="achievement-count">×{item.count}</span>
+                      ) : null}
+                    </span>
+                    <span className="achievement-desc">{item.description}</span>
+                  </span>
+                </div>
+              ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// Compact per-tier counts for the leaderboard. `aligned` (the desktop column)
+// keeps a slot for every tier so rows line up, with a faint dot for zero;
+// otherwise (under the name on mobile) only tiers with something in.
+export function AchievementBadges({
+  tally,
+  aligned = false,
+  className = ""
+}: {
+  tally?: Partial<Record<AchievementTier, number>>;
+  aligned?: boolean;
+  className?: string;
+}) {
+  const present = TIERS.filter(({ tier }) => (tally?.[tier] ?? 0) > 0);
+  if (!tally || (!aligned && present.length === 0)) {
+    return null;
+  }
+  const title = present.length
+    ? `Úspěchy – ${present.map(({ tier, label }) => `${label}: ${tally[tier]}`).join(", ")}`
+    : "Zatím žádné úspěchy";
+  return (
+    <span className={`achievement-badges${aligned ? " is-aligned" : ""} ${className}`.trim()} title={title}>
+      {(aligned ? TIERS : present).map(({ tier, medal }) => {
+        const count = tally[tier] ?? 0;
+        return count > 0 ? (
+          <span key={tier} className="achievement-badge">
+            {medal}
+            {count}
+          </span>
+        ) : (
+          <span key={tier} className="achievement-badge is-zero" aria-hidden="true">
+            ·
+          </span>
+        );
+      })}
+    </span>
+  );
+}

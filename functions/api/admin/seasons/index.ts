@@ -1,4 +1,5 @@
 import { requireAdmin } from "../../../_lib/admin";
+import { seasonAchievementStatements } from "../../../_lib/achievements";
 import { json } from "../../../_lib/auth";
 import type { Env } from "../../../_lib/types";
 
@@ -58,6 +59,9 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
     "SELECT COUNT(*) AS n FROM users WHERE rank IS NOT NULL AND status != 'deleted'"
   ).first<{ n: number }>();
 
+  // Podium achievements, from the final standings (before ranks are reset).
+  const seasonAwards = await seasonAchievementStatements(context.env, current, now);
+
   const reason = `Nová sezóna „${name}": start s 2 000 000 Imfcoiny`;
 
   await context.env.DB.batch([
@@ -67,6 +71,7 @@ export async function onRequestPost(context: PagesContext): Promise<Response> {
          FROM users
         WHERE rank IS NOT NULL AND status != 'deleted'`
     ).bind(current.id),
+    ...seasonAwards,
     context.env.DB.prepare(
       "UPDATE seasons SET ended_date = ?1 WHERE id = ?2 AND ended_date IS NULL"
     ).bind(now, current.id),
