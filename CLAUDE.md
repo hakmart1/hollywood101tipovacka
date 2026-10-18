@@ -11,9 +11,31 @@ credentials here.**
   deploys (`yarn build` → `dist`). There is no manual deploy for the web app.
 - **Cron worker (`worker/`):** deployed separately and manually:
   `npx wrangler deploy --config worker/wrangler.toml`. Do this whenever `worker/` or the
-  shared code it imports (`functions/_lib/evaluate.ts`, `scoring.ts`) changes.
+  shared code it imports (`functions/_lib/evaluate.ts`, `scoring.ts`, `achievements.ts`)
+  changes — the worker bundles its own copy, so a stale worker keeps evaluating with the
+  old rules (e.g. no or outdated achievements) even after the web app is updated.
 - Both `wrangler.toml` and `worker/wrangler.toml` must point at the **same** D1
   `database_id`.
+
+## Achievements
+
+- Definitions (names, tiers, thresholds, rules) live in code:
+  `functions/_lib/achievements.ts`. The DB only stores awards in `user_achievements`
+  (unique per user + key + `source`; one-time "raspberry" achievements use `source = ''`).
+  Awarding is `INSERT OR IGNORE`, so re-running is safe.
+- Per-tier totals are denormalized on `users.achievements_<tier>` so the leaderboard doesn't
+  read `user_achievements`. Every award is followed by `recountStatement()` for that player.
+  **After moving an achievement to another tier**, the stored totals are stale — recount
+  everyone (the last statement of the backfill output, or `recountStatement(env)` with no
+  user id).
+- Backfill over the whole history (used once at release, 2026-10-18; also for re-generating
+  the dev DB): `scripts/backfill-achievements.ts`. Runs locally on a D1 export, so the free
+  plan's 50-queries-per-request limit doesn't apply:
+  1. `npx wrangler d1 export <db> --remote --output export.sql`
+  2. `yarn achievements:backfill export.sql backfill.sql [--reset]`
+  3. `npx wrangler d1 execute <db> --remote --file backfill.sql`
+  `--reset` deletes existing achievements first (clean re-run). Ladder/snake are
+  reconstructed from ledger balances, so they're approximate for past rounds.
 
 ## Cloudflare account
 
