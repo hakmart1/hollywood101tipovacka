@@ -30,7 +30,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "hattrick", tier: "diamond", icon: "🎩", name: "Hattrick", description: "Vyhrát 3 tipovačky v řadě" },
   { key: "money_truck", tier: "diamond", icon: "🚚", name: "Dodávka s penězi", description: "Čistý zisk z tipovačky aspoň 1 M" },
   { key: "season_pass", tier: "diamond", icon: "🎟️", name: "Permanentka", description: "50 tipovaček v řadě" },
-  { key: "perfect_weekend", tier: "diamond", icon: "✨", name: "Dokonalý víkend", description: "Všechny tipy v tipovačce s odchylkou pod 20 %" },
   { key: "bonus_hunter", tier: "diamond", icon: "🏹", name: "Lovec bonusů", description: "Vyhrát bonusovou tipovačku" },
   { key: "superstar", tier: "gold", icon: "🌟", name: "Superstar", description: "1. místo v tipovačce" },
   { key: "season_second", tier: "gold", icon: "🎞️", name: "Druhý v titulcích", description: "2. místo v sezóně" },
@@ -65,7 +64,6 @@ const STREAKS: [number, string][] = [[3, "regular_viewer"], [10, "subscriber"], 
 const FORGETFUL_STREAK = 10;
 const HATTRICK_WINS = 3;
 const CRYSTAL_BALL_ERROR = 0.05;
-const PERFECT_WEEKEND_ERROR = 0.2;
 const MONEY_TRUCK_PER_MOVIE = 200_000; // 1M at 5 movies
 const FLOP_LOSS = 250_000;
 const WAY_OFF_FACTOR = 5;
@@ -177,7 +175,6 @@ export async function roundAchievementStatements(
 
   // --- Per-player tip checks --------------------------------------------------
   for (const [userId, userGuesses] of guessesByUser) {
-    let allClose = eligible.has(userId);
     const biases: number[] = [];
 
     for (const guess of userGuesses) {
@@ -189,9 +186,6 @@ export async function roundAchievementStatements(
       if (guess.guessed_revenue === movie.actual_revenue) {
         award(userId, "nostradamus", `movie:${movie.id}`, detail);
       }
-      if (guessError(guess.guessed_revenue, movie.actual_revenue) >= PERFECT_WEEKEND_ERROR) {
-        allClose = false;
-      }
       // Relative checks make no sense for a movie that earned nothing.
       if (movie.actual_revenue > 0) {
         if (guess.guessed_revenue >= WAY_OFF_FACTOR * movie.actual_revenue) {
@@ -199,10 +193,6 @@ export async function roundAchievementStatements(
         }
         biases.push((guess.guessed_revenue - movie.actual_revenue) / movie.actual_revenue);
       }
-    }
-
-    if (allClose) {
-      award(userId, "perfect_weekend", roundSource, round.title);
     }
 
     if (eligible.has(userId) && biases.length > 0) {
