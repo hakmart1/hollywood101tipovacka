@@ -43,6 +43,9 @@ export interface UserRecord {
   imf_coins_balance: number;
   timezone: string | null;
   avatar_url: string | null;
+  // Only selected by /api/me (not by the session lookup).
+  notify_round_start?: number;
+  notify_round_closing?: number;
 }
 
 export interface LoginAccountRecord extends UserRecord {

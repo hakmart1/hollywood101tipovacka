@@ -171,6 +171,25 @@ export default function UserPage({
     }
   }
 
+  // Opt-in e-mail notifications; saved immediately on toggle.
+  async function saveNotification(field: "notify_round_start" | "notify_round_closing", enabled: boolean) {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ [field]: enabled })
+      });
+      const payload = (await response.json()) as CoinsResponse;
+      onMessage(payload.error || (enabled ? "Upozornění zapnuto." : "Upozornění vypnuto."));
+      if (!payload.error) {
+        await onSessionRefresh();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function closePasswordModal() {
     setCurrentPw("");
     setNewPw("");
@@ -412,6 +431,36 @@ export default function UserPage({
           </div>
         ) : null}
       </section>
+      ) : null}
+
+      {user.status === "active" ? (
+        <section className="user-card notify-card">
+          <h2 className="notify-title">E-mailová upozornění</h2>
+          <label className="notify-option">
+            <input
+              type="checkbox"
+              checked={Boolean(user.notify_round_start)}
+              disabled={busy}
+              onChange={(event) => void saveNotification("notify_round_start", event.target.checked)}
+            />
+            <span>
+              <strong>Nová tipovačka</strong>
+              <span className="notify-hint">E-mail se seznamem filmů, jakmile začne nová tipovačka.</span>
+            </span>
+          </label>
+          <label className="notify-option">
+            <input
+              type="checkbox"
+              checked={Boolean(user.notify_round_closing)}
+              disabled={busy}
+              onChange={(event) => void saveNotification("notify_round_closing", event.target.checked)}
+            />
+            <span>
+              <strong>24 hodin do konce</strong>
+              <span className="notify-hint">Připomínka den před uzavřením — jen když ti ještě chybí nějaký tip.</span>
+            </span>
+          </label>
+        </section>
       ) : null}
 
       <section className="user-card avatar-card">

@@ -1786,3 +1786,33 @@ a.account-nickname:hover {
   font-size: 0.78rem;
   color: #6b7280;
 }
+
+/* E-mail notification opt-ins (Můj účet). */
+.user-card h2.notify-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: #b8860b;
+}
+
+.notify-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+.notify-option input {
+  margin-top: 0.25rem;
+  width: auto;
+}
+
+.notify-option > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.notify-hint {
+  font-size: 0.85rem;
+  color: #6b7280;
+}

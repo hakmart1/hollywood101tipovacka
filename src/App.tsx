@@ -27,6 +27,8 @@ export interface User {
   imf_coins_balance: number;
   timezone: string | null;
   avatar_url: string | null;
+  notify_round_start?: number;
+  notify_round_closing?: number;
 }
 
 interface ApiErrorResponse {
