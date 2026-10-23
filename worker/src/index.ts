@@ -2,13 +2,17 @@
 // Pages app's evaluateRound (which re-checks all prerequisites, so a round that
 // became non-evaluable since scheduling is safely skipped — race-condition guard).
 import { evaluateRound } from "../../functions/_lib/evaluate";
+import { sendRoundNotifications } from "../../functions/_lib/notifications";
 
 interface ScheduledRoundRow {
   id: number;
 }
 
 export default {
-  async scheduled(_event: unknown, env: { DB: D1Database }): Promise<void> {
+  async scheduled(
+    _event: unknown,
+    env: { DB: D1Database; MAILJET_API_KEY?: string; MAILJET_SECRET_KEY?: string; EMAIL_FROM?: string }
+  ): Promise<void> {
     const now = new Date().toISOString();
 
     const due = await env.DB.prepare(
@@ -32,6 +36,16 @@ export default {
       } catch (error) {
         console.error(`Scheduled evaluation failed for round ${round.id}`, error);
       }
+    }
+
+    // Opt-in e-mail notifications (round opened / 24 h left). Needs the
+    // MAILJET_* secrets on this Worker; without them it just logs and retries.
+    try {
+      for (const line of await sendRoundNotifications(env)) {
+        console.log(line);
+      }
+    } catch (error) {
+      console.error("Round notifications failed", error);
     }
   }
 };
