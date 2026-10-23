@@ -16,6 +16,8 @@ interface PagesContext {
 interface UpdateMeRequestBody {
   timezone?: string;
   avatar_url?: string | null;
+  notify_round_start?: boolean;
+  notify_round_closing?: boolean;
 }
 
 export async function onRequestGet(context: PagesContext): Promise<Response> {
@@ -29,7 +31,9 @@ export async function onRequestGet(context: PagesContext): Promise<Response> {
   }
 
   const user = await context.env.DB.prepare(
-    "SELECT id, nickname, email, role, status, imf_coins_balance, timezone, avatar_url FROM users WHERE id = ?1"
+    `SELECT id, nickname, email, role, status, imf_coins_balance, timezone, avatar_url,
+            notify_round_start, notify_round_closing
+       FROM users WHERE id = ?1`
   )
     .bind(session.userId)
     .first<UserRecord>();
@@ -82,6 +86,14 @@ export async function onRequestPatch(context: PagesContext): Promise<Response> {
     }
     columns.push("avatar_url");
     values.push(avatarUrl);
+  }
+
+  // E-mail notification opt-ins (booleans).
+  for (const field of ["notify_round_start", "notify_round_closing"] as const) {
+    if (Object.prototype.hasOwnProperty.call(payload, field)) {
+      columns.push(field);
+      values.push(payload[field] ? 1 : 0);
+    }
   }
 
   if (columns.length === 0) {
