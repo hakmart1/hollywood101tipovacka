@@ -381,6 +381,65 @@ export default function UserPage({
         </Modal>
       ) : null}
 
+      <section className="user-card avatar-card">
+        <h2 className="avatar-title">Profilový obrázek</h2>
+        <div className="avatar-setting-row">
+          <input
+            id="avatar-url"
+            type="text"
+            inputMode="url"
+            aria-label="Odkaz na profilový obrázek"
+            placeholder="např. example.com/foto.jpg"
+            value={avatarInput}
+            onChange={(event) => setAvatarInput(event.target.value)}
+          />
+          <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
+            Uložit
+          </button>
+        </div>
+        <p className="avatar-setting-hint">
+          Nastav link na obrázek nebo využij služby Gravatar:{" "}
+          <a
+            className="account-avatar-hint"
+            href="https://gravatar.com"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Změnit obrázek přes Gravatar →
+          </a>
+        </p>
+      </section>
+
+      {user.status === "active" ? (
+        <section className="user-card notify-card">
+          <h2 className="notify-title">E-mailová upozornění</h2>
+          <label className="notify-option">
+            <input
+              type="checkbox"
+              checked={Boolean(user.notify_round_start)}
+              disabled={busy}
+              onChange={(event) => void saveNotification("notify_round_start", event.target.checked)}
+            />
+            <span>
+              <strong>Nová tipovačka</strong>
+              <span className="notify-hint">E-mail se seznamem filmů, jakmile začne nová tipovačka.</span>
+            </span>
+          </label>
+          <label className="notify-option">
+            <input
+              type="checkbox"
+              checked={Boolean(user.notify_round_closing)}
+              disabled={busy}
+              onChange={(event) => void saveNotification("notify_round_closing", event.target.checked)}
+            />
+            <span>
+              <strong>24 hodin do konce</strong>
+              <span className="notify-hint">Připomínka den před uzavřením — jen když ti ještě chybí nějaký tip.</span>
+            </span>
+          </label>
+        </section>
+      ) : null}
+
       {profile && profile.achievements.length > 0 ? <Achievements achievements={profile.achievements} /> : null}
 
       {user.status === "active" ? (
@@ -432,65 +491,6 @@ export default function UserPage({
         ) : null}
       </section>
       ) : null}
-
-      {user.status === "active" ? (
-        <section className="user-card notify-card">
-          <h2 className="notify-title">E-mailová upozornění</h2>
-          <label className="notify-option">
-            <input
-              type="checkbox"
-              checked={Boolean(user.notify_round_start)}
-              disabled={busy}
-              onChange={(event) => void saveNotification("notify_round_start", event.target.checked)}
-            />
-            <span>
-              <strong>Nová tipovačka</strong>
-              <span className="notify-hint">E-mail se seznamem filmů, jakmile začne nová tipovačka.</span>
-            </span>
-          </label>
-          <label className="notify-option">
-            <input
-              type="checkbox"
-              checked={Boolean(user.notify_round_closing)}
-              disabled={busy}
-              onChange={(event) => void saveNotification("notify_round_closing", event.target.checked)}
-            />
-            <span>
-              <strong>24 hodin do konce</strong>
-              <span className="notify-hint">Připomínka den před uzavřením — jen když ti ještě chybí nějaký tip.</span>
-            </span>
-          </label>
-        </section>
-      ) : null}
-
-      <section className="user-card avatar-card">
-        <h2 className="avatar-title">Profilový obrázek</h2>
-        <div className="avatar-setting-row">
-          <input
-            id="avatar-url"
-            type="text"
-            inputMode="url"
-            aria-label="Odkaz na profilový obrázek"
-            placeholder="např. example.com/foto.jpg"
-            value={avatarInput}
-            onChange={(event) => setAvatarInput(event.target.value)}
-          />
-          <button type="button" className="primary" disabled={busy} onClick={() => void saveAvatar()}>
-            Uložit
-          </button>
-        </div>
-        <p className="avatar-setting-hint">
-          Nastav link na obrázek nebo využij služby Gravatar:{" "}
-          <a
-            className="account-avatar-hint"
-            href="https://gravatar.com"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Změnit obrázek přes Gravatar →
-          </a>
-        </p>
-      </section>
 
       <section className="user-card danger-zone">
         <div>
